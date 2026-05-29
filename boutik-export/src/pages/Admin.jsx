@@ -3,10 +3,10 @@
  */
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiAdminLogin, apiGetAllBoutiques, apiGetGlobalStats, apiBloquerBoutique, apiDebloquerBoutique } from '../lib/api'
 import { Card, Badge, Button, Spinner, Input } from '../components/ui'
 
 const formatCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' F'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -26,18 +26,27 @@ export default function AdminDashboard() {
 
   async function loadData() {
     try {
-      const [boutiquesData, stats] = await Promise.all([
-        apiGetAllBoutiques(),
-        apiGetGlobalStats()
+      const token = localStorage.getItem('boutik_admin_token')
+      const headers = { Authorization: `Bearer ${token}` }
+
+      const [r1, r2] = await Promise.all([
+        fetch(`${API_URL}/api/admin/boutiques`, { headers }),
+        fetch(`${API_URL}/api/admin/stats`, { headers })
       ])
+
+      const boutiquesData = await r1.json()
+      const statsData = await r2.json()
+
+      if (!r1.ok) throw new Error(boutiquesData.error || 'Erreur')
+      if (!r2.ok) throw new Error(statsData.error || 'Erreur')
+
       setBoutiques(boutiquesData)
-      setGlobalStats(stats)
+      setGlobalStats(statsData)
     } catch (err) {
+      setError(err.message)
       if (err.message.includes('refusé') || err.message.includes('invalide')) {
         localStorage.removeItem('boutik_admin_token')
         navigate('/admin/login')
-      } else {
-        setError(err.message)
       }
     } finally {
       setLoading(false)
@@ -46,11 +55,12 @@ export default function AdminDashboard() {
 
   async function handleBloquer(id, estBloquee) {
     try {
-      if (estBloquee) {
-        await apiDebloquerBoutique(id)
-      } else {
-        await apiBloquerBoutique(id)
-      }
+      const token = localStorage.getItem('boutik_admin_token')
+      const route = estBloquee ? 'debloquer' : 'bloquer'
+      await fetch(`${API_URL}/api/admin/boutiques/${id}/${route}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` }
+      })
       await loadData()
     } catch (err) {
       setError(err.message)
@@ -88,7 +98,6 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Stats globales */}
         {globalStats && (
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white border border-paper-border rounded-xl p-3 shadow-card">
@@ -110,15 +119,12 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* Liste boutiques */}
         <div className="space-y-3">
           <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
             Boutiques ({boutiques.length})
           </h2>
           {boutiques.length === 0 ? (
-            <div className="text-center py-10 text-sm text-ink-muted">
-              Aucune boutique enregistrée
-            </div>
+            <div className="text-center py-10 text-sm text-ink-muted">Aucune boutique enregistrée</div>
           ) : (
             boutiques.map(b => (
               <Card key={b.id}>
@@ -127,14 +133,12 @@ export default function AdminDashboard() {
                     <div>
                       <p className="text-sm font-semibold text-ink">{b.nom}</p>
                       <p className="text-xs text-ink-muted">{b.whatsapp}</p>
-                      {b.adresse && <p className="text-xs text-ink-muted">{b.adresse}</p>}
                     </div>
                     <Badge variant={b.bloquee ? 'danger' : 'success'}>
                       {b.bloquee ? 'Bloquée' : 'Active'}
                     </Badge>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center pt-1">
+                  <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="bg-paper-soft rounded-lg py-2">
                       <p className="text-base font-bold text-ink">{b._count?.ventes || 0}</p>
                       <p className="text-[10px] text-ink-muted">Ventes</p>
@@ -148,17 +152,14 @@ export default function AdminDashboard() {
                       <p className="text-[10px] text-ink-muted">Catégories</p>
                     </div>
                   </div>
-
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      variant={b.bloquee ? 'success' : 'danger'}
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleBloquer(b.id, b.bloquee)}
-                    >
-                      {b.bloquee ? 'Débloquer' : 'Bloquer'}
-                    </Button>
-                  </div>
+                  <Button
+                    variant={b.bloquee ? 'success' : 'danger'}
+                    size="sm"
+                    className="w-full"
+                    onClick={() => handleBloquer(b.id, b.bloquee)}
+                  >
+                    {b.bloquee ? 'Débloquer' : 'Bloquer'}
+                  </Button>
                 </div>
               </Card>
             ))
@@ -181,11 +182,26 @@ export function AdminLogin() {
     e.preventDefault()
     setError('')
     setLoading(true)
+
     try {
-      await apiAdminLogin(password)
+      const res = await fetch(`${API_URL}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Accès refusé')
+        return
+      }
+
+      localStorage.setItem('boutik_admin_token', data.token)
       navigate('/admin')
+
     } catch (err) {
-      setError(err.message || 'Accès refusé')
+      setError('Impossible de contacter le serveur. Vérifiez votre connexion.')
     } finally {
       setLoading(false)
     }
