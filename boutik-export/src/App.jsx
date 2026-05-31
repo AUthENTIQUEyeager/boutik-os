@@ -26,13 +26,13 @@ function ProtectedRoute({ children }) {
     </div>
   )
   if (!session) return <Navigate to="/login" replace />
-  if (session.role === 'admin') return <Navigate to="/admin" replace />
   return children
 }
 
+// AdminRoute vérifie localStorage directement — indépendant du Context
 function AdminRoute({ children }) {
-  const { session } = useApp()
-  if (!session || session.role !== 'admin') return <Navigate to="/admin/login" replace />
+  const token = localStorage.getItem('boutik_admin_token')
+  if (!token) return <Navigate to="/admin/login" replace />
   return children
 }
 
@@ -43,7 +43,7 @@ export default function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
 
-      {/* Routes admin */}
+      {/* Routes admin - protégées par localStorage token */}
       <Route path="/admin" element={
         <AdminRoute><AdminDashboard /></AdminRoute>
       } />
