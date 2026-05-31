@@ -1,12 +1,14 @@
 /**
- * BoutiK - Interface Admin système (connecté au backend)
+ * BoutiK - Interface Admin système
  */
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Badge, Button, Spinner, Input } from '../components/ui'
 
 const formatCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' F'
-const API_URL = import.meta.env.VITE_API_URL || ''
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
+
+// ─── DASHBOARD ADMIN ─────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
   const navigate = useNavigate()
@@ -18,56 +20,57 @@ export default function AdminDashboard() {
   useEffect(() => {
     const token = localStorage.getItem('boutik_admin_token')
     if (!token) {
-      navigate('/admin/login')
+      navigate('/admin/login', { replace: true })
       return
     }
-    loadData()
+    loadData(token)
   }, [])
 
-  async function loadData() {
+  async function loadData(token) {
     try {
-      const token = localStorage.getItem('boutik_admin_token')
-      const headers = { Authorization: `Bearer ${token}` }
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
 
       const [r1, r2] = await Promise.all([
         fetch(`${API_URL}/api/admin/boutiques`, { headers }),
         fetch(`${API_URL}/api/admin/stats`, { headers })
       ])
 
+      if (r1.status === 401 || r2.status === 401) {
+        localStorage.removeItem('boutik_admin_token')
+        navigate('/admin/login', { replace: true })
+        return
+      }
+
       const boutiquesData = await r1.json()
       const statsData = await r2.json()
-
-      if (!r1.ok) throw new Error(boutiquesData.error || 'Erreur')
-      if (!r2.ok) throw new Error(statsData.error || 'Erreur')
 
       setBoutiques(boutiquesData)
       setGlobalStats(statsData)
     } catch (err) {
-      setError(err.message)
-      if (err.message.includes('refusé') || err.message.includes('invalide')) {
-        localStorage.removeItem('boutik_admin_token')
-        navigate('/admin/login')
-      }
+      setError('Erreur de connexion au serveur')
     } finally {
       setLoading(false)
     }
   }
 
   async function handleBloquer(id, estBloquee) {
-    try {
-      const token = localStorage.getItem('boutik_admin_token')
-      const route = estBloquee ? 'debloquer' : 'bloquer'
-      await fetch(`${API_URL}/api/admin/boutiques/${id}/${route}`, {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      await loadData()
-    } catch (err) {
-      setError(err.message)
-    }
+    const token = localStorage.getItem('boutik_admin_token')
+    const route = estBloquee ? 'debloquer' : 'bloquer'
+    await fetch(`${API_URL}/api/admin/boutiques/${id}/${route}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    loadData(token)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-screen"><Spinner size="lg" /></div>
+  if (loading) return (
+    <div className="flex items-center justify-center h-screen">
+      <Spinner size="lg" />
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-paper-soft">
@@ -76,13 +79,14 @@ export default function AdminDashboard() {
           <div className="w-7 h-7 bg-ink rounded-lg flex items-center justify-center">
             <span className="text-white text-xs font-bold">B</span>
           </div>
-          <div>
-            <span className="font-semibold text-ink text-sm">BoutiK Admin</span>
-            <Badge variant="ink" className="ml-2 text-[10px]">Système</Badge>
-          </div>
+          <span className="font-semibold text-ink text-sm">BoutiK Admin</span>
+          <Badge variant="ink" className="text-[10px]">Système</Badge>
         </div>
         <button
-          onClick={() => { localStorage.removeItem('boutik_admin_token'); navigate('/login') }}
+          onClick={() => {
+            localStorage.removeItem('boutik_admin_token')
+            navigate('/login')
+          }}
           className="text-xs text-ink-muted"
         >
           Quitter
@@ -124,7 +128,9 @@ export default function AdminDashboard() {
             Boutiques ({boutiques.length})
           </h2>
           {boutiques.length === 0 ? (
-            <div className="text-center py-10 text-sm text-ink-muted">Aucune boutique enregistrée</div>
+            <div className="text-center py-10 text-sm text-ink-muted">
+              Aucune boutique enregistrée
+            </div>
           ) : (
             boutiques.map(b => (
               <Card key={b.id}>
@@ -170,7 +176,7 @@ export default function AdminDashboard() {
   )
 }
 
-// ─── PAGE LOGIN ADMIN ─────────────────────────────────────────────────────────
+// ─── LOGIN ADMIN ──────────────────────────────────────────────────────────────
 
 export function AdminLogin() {
   const [password, setPassword] = useState('')
@@ -194,15 +200,20 @@ export function AdminLogin() {
 
       if (!res.ok) {
         setError(data.error || 'Accès refusé')
+        setLoading(false)
         return
       }
 
+      // Sauvegarder le token AVANT de naviguer
       localStorage.setItem('boutik_admin_token', data.token)
-      navigate('/admin')
+
+      // Petit délai pour s'assurer que localStorage est bien écrit
+      setTimeout(() => {
+        navigate('/admin', { replace: true })
+      }, 100)
 
     } catch (err) {
-      setError('Impossible de contacter le serveur. Vérifiez votre connexion.')
-    } finally {
+      setError('Impossible de contacter le serveur.')
       setLoading(false)
     }
   }
