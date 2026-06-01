@@ -185,38 +185,47 @@ export function AdminLogin() {
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
+  e.preventDefault()
+  setError('')
+  setLoading(true)
 
-    try {
-      const res = await fetch(`${API_URL}/api/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
-      })
+  try {
+    const res = await fetch(`${API_URL}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    })
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        setError(data.error || 'Accès refusé')
-        setLoading(false)
-        return
-      }
-
-      // Sauvegarder le token AVANT de naviguer
-      localStorage.setItem('boutik_admin_token', data.token)
-
-      // Petit délai pour s'assurer que localStorage est bien écrit
-      setTimeout(() => {
-        navigate('/admin', { replace: true })
-      }, 100)
-
-    } catch (err) {
-      setError('Impossible de contacter le serveur.')
+    // Vérifier que c'est bien du JSON (pas une page HTML d'erreur)
+    const contentType = res.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      setError(`Serveur injoignable. API_URL: "${API_URL || '(vide)'}"`)
       setLoading(false)
+      return
     }
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      setError(data.error || 'Accès refusé')
+      setLoading(false)
+      return
+    }
+
+    if (!data.token) {
+      setError('Token manquant dans la réponse serveur')
+      setLoading(false)
+      return
+    }
+
+    localStorage.setItem('boutik_admin_token', data.token)
+    navigate('/admin', { replace: true })
+
+  } catch (err) {
+    setError(`Erreur réseau: ${err.message}`)
+    setLoading(false)
   }
+}
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center px-6">
