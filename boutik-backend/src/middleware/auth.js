@@ -14,6 +14,14 @@ export async function authMiddleware(req, res, next) {
     const token = authHeader.split(' ')[1]
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
+    // Cas admin : pas de boutique associée, on passe directement
+    if (decoded.role === 'admin') {
+      req.boutiqueId = null
+      req.boutique = null
+      req.role = 'admin'
+      return next()
+    }
+
     // Vérifier que la boutique existe et n'est pas bloquée
     const boutique = await prisma.boutique.findUnique({
       where: { id: decoded.boutiqueId }
