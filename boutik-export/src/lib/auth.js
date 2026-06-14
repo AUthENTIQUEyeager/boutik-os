@@ -10,14 +10,16 @@ import {
   createCategorie,
   getBoutique
 } from './db'
+import { apiLoginOrRegister, apiLogout, hasApiUrl } from './api'
 
 // ─── AUTH ────────────────────────────────────────────────────────────────────
 
 export async function login(nomBoutique, whatsapp, motDePasse) {
   const boutique = await findBoutiqueByWhatsapp(whatsapp)
+  let result
 
   if (!boutique) {
-    // Première connexion : créer la boutique
+    // Première connexion : créer la boutique localement (offline-first)
     const nouvelle = await createBoutique({
       nom: nomBoutique,
       whatsapp,
@@ -26,16 +28,39 @@ export async function login(nomBoutique, whatsapp, motDePasse) {
       logo: null,
       siteWeb: null
     })
-    await saveSession({ boutiqueId: nouvelle.id, role: 'gerant' })
-    return { success: true, boutique: nouvelle, isNew: true }
+    await saveSession({
+      boutiqueId: nouvelle.id,
+      role: 'gerant',
+      whatsapp,
+      // Stocké localement uniquement, pour reconnexion auto au backend
+      password: motDePasse
+    })
+    result = { success: true, boutique: nouvelle, isNew: true }
+  } else {
+    if (boutique.motDePasse !== hashPassword(motDePasse)) {
+      return { success: false, error: 'Mot de passe incorrect' }
+    }
+    await saveSession({
+      boutiqueId: boutique.id,
+      role: 'gerant',
+      whatsapp,
+      password: motDePasse
+    })
+    result = { success: true, boutique, isNew: false }
   }
 
-  if (boutique.motDePasse !== hashPassword(motDePasse)) {
-    return { success: false, error: 'Mot de passe incorrect' }
+  // Synchronisation immédiate avec le backend si en ligne
+  if (hasApiUrl() && navigator.onLine) {
+    try {
+      await apiLoginOrRegister(nomBoutique, whatsapp, motDePasse)
+    } catch (err) {
+      // Pas bloquant : l'app fonctionne offline,
+      // sync.js réessaiera dès que possible
+      console.warn('Sync backend différée :', err.message)
+    }
   }
 
-  await saveSession({ boutiqueId: boutique.id, role: 'gerant' })
-  return { success: true, boutique, isNew: false }
+  return result
 }
 
 export async function loginAdmin(password) {
@@ -51,6 +76,7 @@ export async function getCurrentSession() {
 }
 
 export async function logout() {
+  apiLogout()
   await clearSession()
 }
 

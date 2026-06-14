@@ -2,9 +2,9 @@
  * BoutiK - Service de Synchronisation
  * Sync automatique toutes les 5 secondes quand internet disponible
  */
-import { getSyncQueue, clearSyncItem } from './db'
+import { getSyncQueue, clearSyncItem, getSession } from './db'
+import { apiSync, apiLoginOrRegister, hasApiUrl, hasToken } from './api'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://api.boutik.app'
 const SYNC_INTERVAL = 5000 // 5 secondes
 
 let syncInterval = null
@@ -39,6 +39,7 @@ export const syncService = {
   // Synchronisation manuelle
   async sync() {
     if (isSyncing || !navigator.onLine) return
+    if (!hasApiUrl()) return // Pas de backend configuré
 
     isSyncing = true
     this.notifyListeners('syncing')
@@ -50,20 +51,31 @@ export const syncService = {
         return
       }
 
-      // En prod : envoyer au vrai backend
-      // Pour l'instant : simulation
+      // S'assurer qu'on a un token valide (login/register auto si besoin)
+      const ok = await ensureToken()
+      if (!ok) {
+        this.notifyListeners('error')
+        return
+      }
+
+      // Envoyer toute la file en une seule requête (idempotent côté backend)
+      const result = await apiSync(queue)
+
+      // Retirer les éléments traités avec succès
+      const failedIds = new Set((result.errors || []).map(e => e.id))
       for (const item of queue) {
-        try {
-          // await sendToAPI(item)
-          await simulateAPICall(item)
+        if (!failedIds.has(item.id)) {
           await clearSyncItem(item.id)
-        } catch (err) {
-          console.warn('Sync item failed:', err)
         }
       }
 
-      this.notifyListeners('synced', { count: queue.length })
+      if (result.errors?.length) {
+        console.warn('Éléments non synchronisés :', result.errors)
+      }
+
+      this.notifyListeners('synced', { count: queue.length - (result.errors?.length || 0) })
     } catch (err) {
+      console.warn('Sync error:', err.message)
       this.notifyListeners('error', err)
     } finally {
       isSyncing = false
@@ -91,19 +103,20 @@ export const syncService = {
   }
 }
 
-// Simulation d'appel API (remplacer par vrais appels en prod)
-async function simulateAPICall(item) {
-  await new Promise(resolve => setTimeout(resolve, 50))
-  return { success: true }
-}
+// S'assure qu'un token backend valide existe.
+// Si absent (ex: boutique créée hors-ligne), tente une connexion
+// automatique avec les identifiants stockés localement.
+async function ensureToken() {
+  if (hasToken()) return true
 
-// Vrai appel API (décommenter quand backend prêt)
-async function sendToAPI(item) {
-  const res = await fetch(`${API_BASE}/sync`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(item)
-  })
-  if (!res.ok) throw new Error(`Sync failed: ${res.status}`)
-  return res.json()
+  const session = await getSession()
+  if (!session?.whatsapp || !session?.password) return false
+
+  try {
+    await apiLoginOrRegister(session.nom || '', session.whatsapp, session.password)
+    return hasToken()
+  } catch (err) {
+    console.warn('Impossible d\'obtenir un token :', err.message)
+    return false
+  }
 }

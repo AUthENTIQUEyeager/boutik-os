@@ -3,9 +3,9 @@
  * Centralise tous les appels vers le backend Render
  */
 
-const API_URL = import.meta.env.VITE_API_URL || ''
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
-// Helper fetch avec token JWT
+// Helper fetch avec token JWT boutique
 async function apiFetch(path, options = {}) {
   const token = localStorage.getItem('boutik_token')
 
@@ -27,7 +27,7 @@ async function apiFetch(path, options = {}) {
   return data
 }
 
-// ─── AUTH ────────────────────────────────────────────────────────────────────
+// ─── AUTH BOUTIQUE ───────────────────────────────────────────────────────────
 
 export async function apiLogin(whatsapp, password) {
   const data = await apiFetch('/auth/login', {
@@ -47,61 +47,27 @@ export async function apiRegister(nom, whatsapp, password) {
   return data
 }
 
-export async function apiLogout() {
+// Essaie de se connecter sur le backend ; si la boutique n'existe pas
+// encore en ligne (créée hors-ligne), la crée automatiquement.
+export async function apiLoginOrRegister(nom, whatsapp, password) {
+  try {
+    return await apiLogin(whatsapp, password)
+  } catch (err) {
+    const msg = err.message || ''
+    if (msg.includes('Aucune') || msg.includes('introuvable')) {
+      return apiRegister(nom, whatsapp, password)
+    }
+    throw err
+  }
+}
+
+export function apiLogout() {
   localStorage.removeItem('boutik_token')
   localStorage.removeItem('boutik_admin_token')
 }
 
-// ─── ADMIN ───────────────────────────────────────────────────────────────────
-
-export async function apiAdminLogin(password) {
-  const res = await fetch(`${API_URL}/api/admin/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password })
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Accès refusé')
-  if (data.token) localStorage.setItem('boutik_admin_token', data.token)
-  return data
-}
-
-export async function apiGetAllBoutiques() {
-  const token = localStorage.getItem('boutik_admin_token')
-  const res = await fetch(`${API_URL}/api/admin/boutiques`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Erreur')
-  return data
-}
-
-export async function apiGetGlobalStats() {
-  const token = localStorage.getItem('boutik_admin_token')
-  const res = await fetch(`${API_URL}/api/admin/stats`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error || 'Erreur')
-  return data
-}
-
-export async function apiBloquerBoutique(id) {
-  const token = localStorage.getItem('boutik_admin_token')
-  const res = await fetch(`${API_URL}/api/admin/boutiques/${id}/bloquer`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  return res.json()
-}
-
-export async function apiDebloquerBoutique(id) {
-  const token = localStorage.getItem('boutik_admin_token')
-  const res = await fetch(`${API_URL}/api/admin/boutiques/${id}/debloquer`, {
-    method: 'PUT',
-    headers: { Authorization: `Bearer ${token}` }
-  })
-  return res.json()
+export function hasToken() {
+  return !!localStorage.getItem('boutik_token')
 }
 
 // ─── BOUTIQUE ────────────────────────────────────────────────────────────────
@@ -124,5 +90,5 @@ export async function apiSync(queue) {
 }
 
 export function hasApiUrl() {
-  return !!import.meta.env.VITE_API_URL
+  return !!API_URL
 }
