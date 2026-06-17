@@ -1,13 +1,14 @@
 /**
- * BoutiK - Page Gestion du stock
+ * BoutiK — Page Stock v2
  */
 import { useState, useEffect } from 'react'
 import { useApp } from '../store/AppContext'
 import { getCategoriesByBoutique, getProduitsByBoutique, deleteCategorie } from '../lib/db'
-import { Card, Badge, EmptyState, Spinner, Button } from '../components/ui'
+import { Card, Badge, EmptyState, Spinner, Button, SectionHeader } from '../components/ui'
 import AddCategorieModal from '../components/modals/AddCategorieModal'
+import { Package, Plus, Layers, AlertTriangle } from 'lucide-react'
 
-const formatCFA = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' F'
+const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' F'
 
 export default function Stock() {
   const { boutique, refreshStats } = useApp()
@@ -15,7 +16,7 @@ export default function Stock() {
   const [produits, setProduits] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
-  const [view, setView] = useState('categories') // categories | produits
+  const [view, setView] = useState('categories')
 
   async function load() {
     if (!boutique) return
@@ -31,7 +32,7 @@ export default function Stock() {
   useEffect(() => { load() }, [boutique])
 
   async function handleDelete(catId) {
-    if (!confirm('Supprimer cette catégorie et ses produits non vendus ?')) return
+    if (!confirm('Supprimer cette catégorie ?')) return
     await deleteCategorie(catId)
     await load()
     await refreshStats()
@@ -40,139 +41,128 @@ export default function Stock() {
   const disponibles = produits.filter(p => !p.vendu)
   const vendus = produits.filter(p => p.vendu)
 
-  const catsAvecStats = categories.map(cat => {
-    const catProduits = produits.filter(p => p.categorieId === cat.id)
-    const dispo = catProduits.filter(p => !p.vendu)
-    const vendu = catProduits.filter(p => p.vendu)
+  const catsStats = categories.map(cat => {
+    const catP = produits.filter(p => p.categorieId === cat.id)
+    const dispo = catP.filter(p => !p.vendu)
+    const vendu = catP.filter(p => p.vendu)
     return {
       ...cat,
-      total: catProduits.length,
+      total: catP.length,
       disponible: dispo.length,
       vendu: vendu.length,
-      ca: vendu.reduce((s, p) => s + p.prixVente, 0),
       benefice: vendu.reduce((s, p) => s + (p.prixVente - p.prixAchat), 0),
       isLow: dispo.length <= 3 && dispo.length > 0,
-      isOut: dispo.length === 0 && catProduits.length > 0
+      isOut: dispo.length === 0 && catP.length > 0
     }
   })
 
   if (loading) return <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>
 
   return (
-    <div className="px-4 py-4 space-y-4">
+    <div className="px-4 pt-5 pb-4 space-y-5 animate-fade-in">
+
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-base font-semibold text-ink">Stock</h1>
-        <Button size="sm" onClick={() => setShowAdd(true)}>+ Catégorie</Button>
+        <div>
+          <h1 className="text-lg font-semibold text-slate-900">Stock</h1>
+          <p className="text-xs text-slate-500 mt-0.5">{disponibles.length} produits disponibles</p>
+        </div>
+        <Button size="sm" icon={Plus} onClick={() => setShowAdd(true)}>Catégorie</Button>
       </div>
 
-      {/* Résumé global */}
+      {/* Résumé */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-paper-soft rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-ink">{disponibles.length}</p>
-          <p className="text-[10px] text-ink-muted mt-0.5">En stock</p>
-        </div>
-        <div className="bg-paper-soft rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-ink">{vendus.length}</p>
-          <p className="text-[10px] text-ink-muted mt-0.5">Vendus</p>
-        </div>
-        <div className="bg-paper-soft rounded-xl p-3 text-center">
-          <p className="text-xl font-bold text-ink">{categories.length}</p>
-          <p className="text-[10px] text-ink-muted mt-0.5">Catégories</p>
-        </div>
+        {[
+          { label: 'En stock', value: disponibles.length, color: 'text-brand' },
+          { label: 'Vendus', value: vendus.length, color: 'text-slate-900' },
+          { label: 'Catégories', value: categories.length, color: 'text-slate-900' },
+        ].map(s => (
+          <div key={s.label} className="bg-white border border-slate-200 rounded-[14px] p-3 text-center shadow-card">
+            <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{s.label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Onglets */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setView('categories')}
-          className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors ${view === 'categories' ? 'bg-ink text-white' : 'bg-paper-soft text-ink-muted'}`}
-        >
-          Catégories
-        </button>
-        <button
-          onClick={() => setView('produits')}
-          className={`flex-1 py-2 rounded-xl text-xs font-medium transition-colors ${view === 'produits' ? 'bg-ink text-white' : 'bg-paper-soft text-ink-muted'}`}
-        >
-          Produits
-        </button>
+      <div className="flex gap-2 bg-slate-100 p-1 rounded-[10px]">
+        {[{ k: 'categories', l: 'Catégories' }, { k: 'produits', l: 'Produits' }].map(t => (
+          <button
+            key={t.k}
+            onClick={() => setView(t.k)}
+            className={`flex-1 py-1.5 rounded-[8px] text-xs font-medium transition-all ${view === t.k ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+          >
+            {t.l}
+          </button>
+        ))}
       </div>
 
       {/* Vue catégories */}
       {view === 'categories' && (
         <div className="space-y-3">
-          {catsAvecStats.length === 0 ? (
-            <EmptyState
-              title="Aucune catégorie"
-              description="Commencez par ajouter vos produits"
-              action={<Button size="sm" onClick={() => setShowAdd(true)}>Ajouter</Button>}
-            />
-          ) : (
-            catsAvecStats.map(cat => (
-              <Card key={cat.id}>
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-ink truncate">{cat.nom}</p>
-                      <p className="text-xs font-mono text-ink-muted">{cat.prefix}-XXXX</p>
-                    </div>
-                    <div className="flex gap-1.5 shrink-0">
-                      {cat.isLow && <Badge variant="warning">Bas</Badge>}
-                      {cat.isOut && <Badge variant="danger">Épuisé</Badge>}
-                    </div>
+          {catsStats.length === 0 ? (
+            <EmptyState icon={Layers} title="Aucune catégorie" description="Commencez par ajouter vos produits" action={<Button size="sm" icon={Plus} onClick={() => setShowAdd(true)}>Ajouter</Button>} />
+          ) : catsStats.map(cat => (
+            <Card key={cat.id}>
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{cat.nom}</p>
+                    <p className="text-xs font-mono text-slate-400 mt-0.5">{cat.prefix}-XXXX</p>
                   </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="bg-paper-soft rounded-lg py-2">
-                      <p className="text-base font-bold text-ink">{cat.disponible}</p>
-                      <p className="text-[10px] text-ink-muted">Dispo</p>
-                    </div>
-                    <div className="bg-paper-soft rounded-lg py-2">
-                      <p className="text-base font-bold text-ink">{cat.vendu}</p>
-                      <p className="text-[10px] text-ink-muted">Vendus</p>
-                    </div>
-                    <div className="bg-paper-soft rounded-lg py-2">
-                      <p className="text-base font-bold text-ink">{cat.total}</p>
-                      <p className="text-[10px] text-ink-muted">Total</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-ink-muted">Achat: {formatCFA(cat.prixAchat)} / Vente: {formatCFA(cat.prixVente)}</span>
-                    {cat.benefice > 0 && (
-                      <span className="text-accent-success font-medium">+{formatCFA(cat.benefice)}</span>
+                  <div className="flex gap-1.5 shrink-0">
+                    {cat.isLow && (
+                      <Badge variant="warning">
+                        <AlertTriangle className="w-2.5 h-2.5" /> Bas
+                      </Badge>
                     )}
+                    {cat.isOut && <Badge variant="danger">Épuisé</Badge>}
                   </div>
-
-                  {cat.disponible === 0 && (
-                    <button
-                      onClick={() => handleDelete(cat.id)}
-                      className="w-full py-2 text-xs text-accent-danger hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      Supprimer la catégorie
-                    </button>
-                  )}
                 </div>
-              </Card>
-            ))
-          )}
+
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: 'Dispo', value: cat.disponible, color: 'text-brand' },
+                    { label: 'Vendus', value: cat.vendu, color: 'text-slate-900' },
+                    { label: 'Total', value: cat.total, color: 'text-slate-900' },
+                  ].map(s => (
+                    <div key={s.label} className="bg-slate-50 rounded-[10px] py-2 text-center">
+                      <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
+                      <p className="text-[10px] text-slate-500">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-3">
+                  <span className="text-slate-400">{fmt(cat.prixAchat)} → {fmt(cat.prixVente)}</span>
+                  {cat.benefice > 0 && <span className="font-medium text-brand">+{fmt(cat.benefice)}</span>}
+                </div>
+
+                {cat.isOut && (
+                  <button onClick={() => handleDelete(cat.id)} className="w-full py-2 text-xs text-red-500 hover:bg-red-50 rounded-[8px] transition-colors">
+                    Supprimer la catégorie
+                  </button>
+                )}
+              </div>
+            </Card>
+          ))}
         </div>
       )}
 
       {/* Vue produits */}
       {view === 'produits' && (
         <div className="space-y-2">
-          <p className="text-xs text-ink-muted">{disponibles.length} produits disponibles</p>
           {disponibles.length === 0 ? (
-            <EmptyState title="Stock épuisé" description="Tous les produits ont été vendus" />
+            <EmptyState icon={Package} title="Stock épuisé" description="Tous les produits ont été vendus" />
           ) : (
             <Card padding={false} className="overflow-hidden">
               {disponibles.map((p, i) => (
-                <div key={p.id} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-paper-border' : ''}`}>
+                <div key={p.id} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
                   <div>
-                    <p className="text-xs font-mono font-medium text-ink">{p.id}</p>
-                    <p className="text-xs text-ink-muted mt-0.5">{p.nom}</p>
+                    <p className="text-xs font-mono font-medium text-slate-700">{p.id}</p>
+                    <p className="text-xs text-slate-400 mt-0.5">{p.nom}</p>
                   </div>
-                  <p className="text-sm font-semibold text-ink">{formatCFA(p.prixVente)}</p>
+                  <p className="text-sm font-semibold text-slate-900">{fmt(p.prixVente)}</p>
                 </div>
               ))}
             </Card>

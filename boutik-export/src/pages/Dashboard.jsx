@@ -1,14 +1,18 @@
 /**
- * BoutiK - Page d'accueil / Dashboard
+ * BoutiK — Dashboard v2
  */
 import { useState, useEffect, useCallback } from 'react'
 import { useApp } from '../store/AppContext'
 import { getProduitsByBoutique, getCategoriesByBoutique } from '../lib/db'
-import { StatCard, Card, Badge, Button, EmptyState, Spinner } from '../components/ui'
+import { StatCard, Card, Badge, Button, EmptyState, Spinner, SectionHeader } from '../components/ui'
 import SellModal from '../components/modals/SellModal'
 import AddCategorieModal from '../components/modals/AddCategorieModal'
-import { formatCFA as _formatCFA } from '../lib/utils'
-const formatCFA = _formatCFA
+import {
+  TrendingUp, ShoppingCart, Package, LayoutGrid,
+  Plus, AlertTriangle, ChevronRight, ArrowUpRight
+} from 'lucide-react'
+
+const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' F'
 
 export default function Dashboard() {
   const { boutique, stats, refreshStats } = useApp()
@@ -17,94 +21,97 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedProduit, setSelectedProduit] = useState(null)
   const [showAddCategorie, setShowAddCategorie] = useState(false)
-  const [filter, setFilter] = useState('all') // all | cat_id
+  const [filterCat, setFilterCat] = useState('all')
 
   const load = useCallback(async () => {
     if (!boutique) return
-    try {
-      const [cats, prods] = await Promise.all([
-        getCategoriesByBoutique(boutique.id),
-        getProduitsByBoutique(boutique.id)
-      ])
-      setCategories(cats)
-      setProduits(prods)
-    } finally {
-      setLoading(false)
-    }
+    const [cats, prods] = await Promise.all([
+      getCategoriesByBoutique(boutique.id),
+      getProduitsByBoutique(boutique.id)
+    ])
+    setCategories(cats)
+    setProduits(prods)
+    setLoading(false)
   }, [boutique])
 
   useEffect(() => { load() }, [load])
 
-  const handleVenteComplete = async () => {
+  const disponibles = produits.filter(p => !p.vendu)
+  const catsFiltrees = filterCat === 'all'
+    ? categories
+    : categories.filter(c => c.id === filterCat)
+
+  const catsAvecStock = catsFiltrees.map(cat => ({
+    ...cat,
+    stockRestant: disponibles.filter(p => p.categorieId === cat.id).length,
+    premierProduit: disponibles.find(p => p.categorieId === cat.id)
+  }))
+
+  const handleVenteOk = async () => {
     setSelectedProduit(null)
     await load()
     await refreshStats()
   }
 
-  const handleCategorieAdded = async () => {
+  const handleCatOk = async () => {
     setShowAddCategorie(false)
     await load()
     await refreshStats()
   }
 
-  const produitsDisponibles = produits.filter(p => !p.vendu)
-  const produitsFiltres = filter === 'all'
-    ? produitsDisponibles
-    : produitsDisponibles.filter(p => p.categorieId === filter)
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <Spinner size="lg" />
+    </div>
+  )
 
-  // Grouper par catégorie pour afficher les cartes
-  const categoriesAvecStock = categories.map(cat => ({
-    ...cat,
-    stockRestant: produitsDisponibles.filter(p => p.categorieId === cat.id).length,
-    premierProduit: produitsDisponibles.find(p => p.categorieId === cat.id)
-  })).filter(c => c.stockRestant > 0 || categories.length > 0)
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <Spinner size="lg" />
-      </div>
-    )
-  }
+  const hour = new Date().getHours()
+  const greet = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'
 
   return (
-    <div className="px-4 py-4 space-y-5">
-      {/* Bonjour */}
+    <div className="px-4 pt-5 pb-4 space-y-6 animate-fade-in">
+
+      {/* ── Greeting ── */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-base font-semibold text-ink">
-            {getGreeting()}, {boutique?.nom?.split(' ')[0] || 'Gérant'}
-          </h1>
-          <p className="text-xs text-ink-muted mt-0.5">
+          <p className="text-xs text-slate-500 font-medium">
             {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
           </p>
+          <h1 className="text-lg font-semibold text-slate-900 mt-0.5">
+            {greet}, {boutique?.nom?.split(' ')[0] || 'Gérant'}
+          </h1>
         </div>
-        <Button size="sm" onClick={() => setShowAddCategorie(true)}>
-          + Catégorie
+        <Button size="sm" icon={Plus} onClick={() => setShowAddCategorie(true)}>
+          Catégorie
         </Button>
       </div>
 
-      {/* Stats du jour */}
+      {/* ── Stats ── */}
       {stats && (
         <div className="grid grid-cols-2 gap-3">
           <StatCard
-            label="Bénéfice du jour"
-            value={formatCFA(stats.beneficeJour)}
+            label="Bénéfice jour"
+            value={fmt(stats.beneficeJour)}
             sub={`${stats.ventesJour} vente${stats.ventesJour > 1 ? 's' : ''}`}
-            variant={stats.beneficeJour > 0 ? 'success' : 'default'}
+            icon={TrendingUp}
+            variant={stats.beneficeJour > 0 ? 'brand' : 'default'}
           />
           <StatCard
-            label="Stock disponible"
+            label="Stock dispo"
             value={stats.stockTotal}
             sub={`${stats.totalCategories} catégorie${stats.totalCategories > 1 ? 's' : ''}`}
+            icon={Package}
           />
         </div>
       )}
 
-      {/* Alertes stock faible */}
+      {/* ── Alertes stock faible ── */}
       {stats?.produitsFaibleStock?.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 space-y-1">
-          <p className="text-xs font-semibold text-amber-800">Stock faible</p>
+        <div className="bg-amber-50 border border-amber-200 rounded-[14px] p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+            <p className="text-xs font-semibold text-amber-800">Stock faible</p>
+          </div>
           {stats.produitsFaibleStock.map(cat => (
             <div key={cat.id} className="flex items-center justify-between">
               <span className="text-xs text-amber-700">{cat.nom}</span>
@@ -114,84 +121,66 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Filtre catégories */}
+      {/* ── Filtre catégories ── */}
       {categories.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          <button
-            onClick={() => setFilter('all')}
-            className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === 'all' ? 'bg-ink text-white' : 'bg-paper-soft text-ink-muted'}`}
-          >
-            Tous
-          </button>
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
+          <FilterPill active={filterCat === 'all'} onClick={() => setFilterCat('all')}>Tous</FilterPill>
           {categories.map(cat => (
-            <button
-              key={cat.id}
-              onClick={() => setFilter(cat.id)}
-              className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${filter === cat.id ? 'bg-ink text-white' : 'bg-paper-soft text-ink-muted'}`}
-            >
+            <FilterPill key={cat.id} active={filterCat === cat.id} onClick={() => setFilterCat(cat.id)}>
               {cat.nom}
-            </button>
+            </FilterPill>
           ))}
         </div>
       )}
 
-      {/* Produits - vue catégories */}
-      {filter === 'all' ? (
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Catégories</h2>
-          {categoriesAvecStock.length === 0 ? (
-            <EmptyState
-              title="Aucun produit"
-              description="Ajoutez votre première catégorie de produits"
-              action={
-                <Button size="sm" onClick={() => setShowAddCategorie(true)}>
-                  Ajouter une catégorie
-                </Button>
-              }
-            />
-          ) : (
-            <div className="grid grid-cols-2 gap-3">
-              {categoriesAvecStock.map(cat => (
-                <CategorieCard
-                  key={cat.id}
-                  categorie={cat}
-                  onVente={() => cat.premierProduit && setSelectedProduit(cat.premierProduit)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">
-            {produitsFiltres.length} produit{produitsFiltres.length > 1 ? 's' : ''} disponible{produitsFiltres.length > 1 ? 's' : ''}
-          </h2>
-          {produitsFiltres.length === 0 ? (
-            <EmptyState title="Stock épuisé" description="Tous les produits de cette catégorie ont été vendus" />
-          ) : (
-            <div className="space-y-2">
-              {produitsFiltres.map(p => (
-                <ProduitRow key={p.id} produit={p} onSelect={() => setSelectedProduit(p)} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ── Grille catégories ── */}
+      <div>
+        <SectionHeader
+          title="Produits"
+          action={
+            <span className="text-xs text-slate-400">{disponibles.length} en stock</span>
+          }
+        />
+        {catsAvecStock.length === 0 ? (
+          <EmptyState
+            icon={Package}
+            title="Aucun produit"
+            description="Ajoutez votre première catégorie pour commencer"
+            action={
+              <Button size="sm" icon={Plus} onClick={() => setShowAddCategorie(true)}>
+                Ajouter une catégorie
+              </Button>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {catsAvecStock.map(cat => (
+              <CatCard
+                key={cat.id}
+                cat={cat}
+                onPress={() => cat.premierProduit && setSelectedProduit(cat.premierProduit)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-      {/* Dernières ventes */}
+      {/* ── Dernières ventes ── */}
       {stats?.dernieresVentes?.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-xs font-semibold text-ink-muted uppercase tracking-wide">Dernières ventes</h2>
+        <div>
+          <SectionHeader title="Dernières ventes" />
           <Card padding={false} className="overflow-hidden">
             {stats.dernieresVentes.slice(0, 5).map((v, i) => (
-              <div key={v.id} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-paper-border' : ''}`}>
-                <div>
-                  <p className="text-sm font-medium text-ink">{v.nomProduit}</p>
-                  <p className="text-xs text-ink-muted">{formatDate(v.date)}</p>
+              <div key={v.id} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-900 truncate">{v.nomProduit}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {new Date(v.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-ink">{formatCFA(v.prixVente)}</p>
-                  <p className="text-xs text-accent-success">+{formatCFA(v.benefice)}</p>
+                <div className="text-right ml-3 shrink-0">
+                  <p className="text-sm font-semibold text-slate-900">{fmt(v.prixVente)}</p>
+                  <p className="text-xs text-brand">+{fmt(v.benefice)}</p>
                 </div>
               </div>
             ))}
@@ -199,73 +188,55 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Modals */}
+      {/* ── Modals ── */}
       {selectedProduit && (
-        <SellModal
-          produit={selectedProduit}
-          boutiqueId={boutique.id}
-          onClose={() => setSelectedProduit(null)}
-          onSuccess={handleVenteComplete}
-        />
+        <SellModal produit={selectedProduit} boutiqueId={boutique.id} onClose={() => setSelectedProduit(null)} onSuccess={handleVenteOk} />
       )}
       {showAddCategorie && (
-        <AddCategorieModal
-          boutiqueId={boutique.id}
-          onClose={() => setShowAddCategorie(false)}
-          onSuccess={handleCategorieAdded}
-        />
+        <AddCategorieModal boutiqueId={boutique.id} onClose={() => setShowAddCategorie(false)} onSuccess={handleCatOk} />
       )}
     </div>
   )
 }
 
-function CategorieCard({ categorie, onVente }) {
-  const isLow = categorie.stockRestant <= 3
+function FilterPill({ children, active, onClick }) {
   return (
-    <Card
-      onClick={onVente}
-      className={`relative ${!categorie.premierProduit ? 'opacity-60 cursor-not-allowed' : ''}`}
+    <button
+      onClick={onClick}
+      className={`shrink-0 px-3 py-1.5 rounded-[8px] text-xs font-medium transition-all ${
+        active ? 'bg-brand text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-300'
+      }`}
     >
-      <div className="space-y-2">
-        <div className="flex items-start justify-between">
-          <p className="text-sm font-semibold text-ink leading-tight line-clamp-2">{categorie.nom}</p>
-          {isLow && <Badge variant="warning" className="shrink-0 ml-1">Bas</Badge>}
-        </div>
-        <p className="text-lg font-bold text-ink">{formatCFA(categorie.prixVente)}</p>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-ink-muted">{categorie.stockRestant} en stock</span>
-          <span className="text-xs text-accent-success">+{formatCFA(categorie.prixVente - categorie.prixAchat)}</span>
-        </div>
-      </div>
-    </Card>
+      {children}
+    </button>
   )
 }
 
-function ProduitRow({ produit, onSelect }) {
+function CatCard({ cat, onPress }) {
+  const isLow = cat.stockRestant > 0 && cat.stockRestant <= 3
+  const isEmpty = cat.stockRestant === 0
+
   return (
     <div
-      onClick={onSelect}
-      className="bg-white border border-paper-border rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer hover:border-ink/20 transition-colors active:scale-[0.99]"
+      onClick={!isEmpty ? onPress : undefined}
+      className={`bg-white border rounded-[14px] p-3.5 shadow-card transition-all ${
+        isEmpty
+          ? 'border-slate-100 opacity-50'
+          : 'border-slate-200 hover:border-brand/40 hover:shadow-card-hover cursor-pointer active:scale-[0.98]'
+      }`}
     >
-      <div>
-        <p className="text-sm font-medium text-ink">{produit.id}</p>
-        <p className="text-xs text-ink-muted">{produit.nom}</p>
-      </div>
-      <div className="text-right">
-        <p className="text-sm font-semibold text-ink">{formatCFA(produit.prixVente)}</p>
-        <p className="text-xs text-ink-muted">Vendre</p>
+      <div className="space-y-2.5">
+        <div className="flex items-start justify-between gap-1">
+          <p className="text-sm font-semibold text-slate-900 leading-tight line-clamp-2">{cat.nom}</p>
+          {isLow && <Badge variant="warning">Bas</Badge>}
+          {isEmpty && <Badge variant="danger">0</Badge>}
+        </div>
+        <p className="text-lg font-bold text-slate-950">{fmt(cat.prixVente)}</p>
+        <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+          <span className="text-xs text-slate-400">{cat.stockRestant} restant{cat.stockRestant > 1 ? 's' : ''}</span>
+          <span className="text-xs font-medium text-brand">+{fmt(cat.prixVente - cat.prixAchat)}</span>
+        </div>
       </div>
     </div>
   )
-}
-
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'Bonjour'
-  if (h < 18) return 'Bon après-midi'
-  return 'Bonsoir'
-}
-
-function formatDate(iso) {
-  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
