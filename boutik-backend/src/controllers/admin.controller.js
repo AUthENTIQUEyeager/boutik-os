@@ -4,7 +4,6 @@
 import prisma from '../config/database.js'
 import { generateToken } from '../middleware/auth.js'
 
-// POST /api/admin/login
 export async function adminLogin(req, res) {
   try {
     const { password } = req.body
@@ -18,7 +17,6 @@ export async function adminLogin(req, res) {
   }
 }
 
-// GET /api/admin/boutiques
 export async function getAllBoutiques(req, res) {
   try {
     const boutiques = await prisma.boutique.findMany({
@@ -29,18 +27,36 @@ export async function getAllBoutiques(req, res) {
       },
       orderBy: { createdAt: 'desc' }
     })
-    return res.json(boutiques)
+
+    const enriched = await Promise.all(boutiques.map(async (b) => {
+      const stats = await prisma.vente.aggregate({
+        where: { boutiqueId: b.id },
+        _sum: { prixVente: true, benefice: true }
+      })
+      const ventesAujourdhui = await prisma.vente.count({
+        where: {
+          boutiqueId: b.id,
+          date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) }
+        }
+      })
+      return {
+        ...b,
+        ca: stats._sum.prixVente || 0,
+        benefice: stats._sum.benefice || 0,
+        ventesAujourdhui
+      }
+    }))
+
+    return res.json(enriched)
   } catch (err) {
     return res.status(500).json({ error: 'Erreur serveur' })
   }
 }
 
-// PUT /api/admin/boutiques/:id/bloquer
 export async function bloquerBoutique(req, res) {
   try {
-    const { id } = req.params
     const boutique = await prisma.boutique.update({
-      where: { id },
+      where: { id: req.params.id },
       data: { bloquee: true }
     })
     return res.json({ success: true, boutique })
@@ -49,12 +65,10 @@ export async function bloquerBoutique(req, res) {
   }
 }
 
-// PUT /api/admin/boutiques/:id/debloquer
 export async function debloquerBoutique(req, res) {
   try {
-    const { id } = req.params
     const boutique = await prisma.boutique.update({
-      where: { id },
+      where: { id: req.params.id },
       data: { bloquee: false }
     })
     return res.json({ success: true, boutique })
@@ -63,7 +77,6 @@ export async function debloquerBoutique(req, res) {
   }
 }
 
-// GET /api/admin/stats
 export async function getGlobalStats(req, res) {
   try {
     const [boutiques, ventes, produits] = await Promise.all([
@@ -74,7 +87,6 @@ export async function getGlobalStats(req, res) {
       }),
       prisma.produit.count()
     ])
-
     return res.json({
       totalBoutiques: boutiques,
       totalVentes: ventes._count,

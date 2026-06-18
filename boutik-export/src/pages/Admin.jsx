@@ -192,8 +192,19 @@ function BoutiqueCard({ boutique: b, onBloquer }) {
         {/* Stats boutique */}
         <div className="grid grid-cols-3 gap-2">
           <MiniStat label="Ventes" value={b._count?.ventes || 0} />
-          <MiniStat label="Produits" value={b._count?.produits || 0} />
+          <MiniStat label="Aujourd'hui" value={b.ventesAujourdhui || 0} />
           <MiniStat label="Catégories" value={b._count?.categories || 0} />
+        </div>
+        {/* CA et bénéfice */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="bg-slate-50 rounded-[10px] p-2.5">
+            <p className="text-[10px] text-slate-500 mb-0.5">Chiffre d'affaires</p>
+            <p className="text-sm font-bold text-slate-900">{fmt(b.ca)}</p>
+          </div>
+          <div className="bg-brand-soft border border-brand-border rounded-[10px] p-2.5">
+            <p className="text-[10px] text-brand mb-0.5">Bénéfice total</p>
+            <p className="text-sm font-bold text-brand">{fmt(b.benefice)}</p>
+          </div>
         </div>
 
         {/* Bouton bloquer */}
