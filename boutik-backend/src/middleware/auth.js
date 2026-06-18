@@ -14,7 +14,7 @@ export async function authMiddleware(req, res, next) {
     const token = authHeader.split(' ')[1]
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
 
-    // Cas admin : pas de boutique associée, on passe directement
+    // Cas admin
     if (decoded.role === 'admin') {
       req.boutiqueId = null
       req.boutique = null
@@ -22,7 +22,6 @@ export async function authMiddleware(req, res, next) {
       return next()
     }
 
-    // Vérifier que la boutique existe et n'est pas bloquée
     const boutique = await prisma.boutique.findUnique({
       where: { id: decoded.boutiqueId }
     })
@@ -31,8 +30,13 @@ export async function authMiddleware(req, res, next) {
       return res.status(401).json({ error: 'Boutique introuvable' })
     }
 
+    // Boutique bloquée : retourner 403 avec bloquee: true
+    // pour que le frontend puisse afficher l'écran de blocage
     if (boutique.bloquee) {
-      return res.status(403).json({ error: 'Boutique bloquée. Contactez l\'administrateur.' })
+      return res.status(403).json({
+        error: 'Boutique bloquée',
+        bloquee: true
+      })
     }
 
     req.boutiqueId = boutique.id
@@ -41,7 +45,7 @@ export async function authMiddleware(req, res, next) {
     next()
   } catch (err) {
     if (err.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Session expirée. Reconnectez-vous.' })
+      return res.status(401).json({ error: 'Session expirée' })
     }
     return res.status(401).json({ error: 'Token invalide' })
   }

@@ -47,9 +47,16 @@ export function AppProvider({ children }) {
       const res = await fetch(`${API_URL}/api/boutique`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (res.status === 403) {
+        const data = await res.json()
+        if (data.bloquee) {
+          setBoutique(prev => prev ? { ...prev, bloquee: true } : prev)
+        }
+        return
+      }
       if (res.ok) {
         const data = await res.json()
-        setBoutique(prev => prev ? { ...prev, bloquee: data.bloquee } : prev)
+        setBoutique(prev => prev ? { ...prev, bloquee: data.bloquee || false } : prev)
       }
     } catch {}
   }
@@ -81,9 +88,12 @@ export function AppProvider({ children }) {
       const res = await fetch(`${API_URL}/api/boutique`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      if (res.status === 403) {
+        return { ...localBoutique, bloquee: true }
+      }
       if (res.ok) {
         const data = await res.json()
-        return { ...localBoutique, bloquee: data.bloquee }
+        return { ...localBoutique, bloquee: data.bloquee || false }
       }
     } catch {}
     return localBoutique
@@ -100,7 +110,8 @@ export function AppProvider({ children }) {
 
   const login = useCallback(async (sess, b) => {
     setSession(sess)
-    setBoutique(b)
+    const boutiqueData = await fetchBoutiqueStatus(b)
+    setBoutique(boutiqueData)
     if (b) await refreshStats(b.id)
   }, [refreshStats])
 
