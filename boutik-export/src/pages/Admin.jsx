@@ -63,7 +63,7 @@ export default function AdminDashboard() {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}` }
     })
-    loadData(token)
+    await loadData(token)
   }
 
   if (loading) return (
