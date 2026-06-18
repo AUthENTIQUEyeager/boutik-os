@@ -1,7 +1,7 @@
 /**
  * BoutiK - Context global
  */
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { getCurrentSession, logout as authLogout } from '../lib/auth'
 import { getBoutique, getDashboardStats } from '../lib/db'
 import { syncService } from '../lib/sync'
@@ -16,6 +16,7 @@ export function AppProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [syncStatus, setSyncStatus] = useState('idle')
   const [lastSync, setLastSync] = useState(null)
+  const checkInterval = useRef(null)
 
   useEffect(() => {
     initSession()
@@ -27,8 +28,31 @@ export function AppProvider({ children }) {
         setTimeout(() => setSyncStatus('idle'), 3000)
       }
     })
-    return () => { unsub(); syncService.stop() }
+    return () => { unsub(); syncService.stop(); clearInterval(checkInterval.current) }
   }, [])
+
+  // Vérifier le statut bloqué toutes les 30 secondes
+  useEffect(() => {
+    if (!session?.boutiqueId) return
+    checkInterval.current = setInterval(() => {
+      if (navigator.onLine) checkBlocage()
+    }, 30000)
+    return () => clearInterval(checkInterval.current)
+  }, [session])
+
+  async function checkBlocage() {
+    try {
+      const token = localStorage.getItem('boutik_token')
+      if (!token || !API_URL) return
+      const res = await fetch(`${API_URL}/api/boutique`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setBoutique(prev => prev ? { ...prev, bloquee: data.bloquee } : prev)
+      }
+    } catch {}
+  }
 
   async function initSession() {
     try {
@@ -37,7 +61,6 @@ export function AppProvider({ children }) {
         setSession(sess)
         if (sess.boutiqueId) {
           const b = await getBoutique(sess.boutiqueId)
-          // Vérifier statut bloqué depuis le backend si en ligne
           const boutiqueData = await fetchBoutiqueStatus(b)
           setBoutique(boutiqueData)
           await refreshStats(sess.boutiqueId)
@@ -50,7 +73,6 @@ export function AppProvider({ children }) {
     }
   }
 
-  // Vérifie si la boutique est bloquée côté backend
   async function fetchBoutiqueStatus(localBoutique) {
     if (!API_URL || !navigator.onLine) return localBoutique
     try {
