@@ -1,11 +1,12 @@
 /**
- * BoutiK - Context global de l'application
+ * BoutiK - Context global
  */
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import { getCurrentSession, logout as authLogout } from '../lib/auth'
 import { getBoutique, getDashboardStats } from '../lib/db'
 import { syncService } from '../lib/sync'
 
+const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
@@ -13,26 +14,20 @@ export function AppProvider({ children }) {
   const [boutique, setBoutique] = useState(null)
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [syncStatus, setSyncStatus] = useState('idle') // idle | syncing | synced | error | offline | online
+  const [syncStatus, setSyncStatus] = useState('idle')
   const [lastSync, setLastSync] = useState(null)
 
-  // Initialiser la session
   useEffect(() => {
     initSession()
     syncService.start()
-
-    const unsub = syncService.subscribe((event, data) => {
+    const unsub = syncService.subscribe((event) => {
       setSyncStatus(event)
       if (event === 'synced') {
         setLastSync(new Date())
         setTimeout(() => setSyncStatus('idle'), 3000)
       }
     })
-
-    return () => {
-      unsub()
-      syncService.stop()
-    }
+    return () => { unsub(); syncService.stop() }
   }, [])
 
   async function initSession() {
@@ -42,7 +37,9 @@ export function AppProvider({ children }) {
         setSession(sess)
         if (sess.boutiqueId) {
           const b = await getBoutique(sess.boutiqueId)
-          setBoutique(b)
+          // Vérifier statut bloqué depuis le backend si en ligne
+          const boutiqueData = await fetchBoutiqueStatus(b)
+          setBoutique(boutiqueData)
           await refreshStats(sess.boutiqueId)
         }
       }
@@ -51,6 +48,23 @@ export function AppProvider({ children }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Vérifie si la boutique est bloquée côté backend
+  async function fetchBoutiqueStatus(localBoutique) {
+    if (!API_URL || !navigator.onLine) return localBoutique
+    try {
+      const token = localStorage.getItem('boutik_token')
+      if (!token) return localBoutique
+      const res = await fetch(`${API_URL}/api/boutique`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        return { ...localBoutique, bloquee: data.bloquee }
+      }
+    } catch {}
+    return localBoutique
   }
 
   const refreshStats = useCallback(async (boutiqueId) => {
@@ -85,18 +99,10 @@ export function AppProvider({ children }) {
 
   return (
     <AppContext.Provider value={{
-      session,
-      boutique,
-      stats,
-      loading,
-      syncStatus,
-      lastSync,
+      session, boutique, stats, loading,
+      syncStatus, lastSync,
       isOnline: navigator.onLine,
-      login,
-      logout,
-      updateBoutique,
-      refreshStats,
-      manualSync
+      login, logout, updateBoutique, refreshStats, manualSync
     }}>
       {children}
     </AppContext.Provider>
