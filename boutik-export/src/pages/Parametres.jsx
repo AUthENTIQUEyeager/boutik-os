@@ -6,17 +6,19 @@ import { useNavigate } from 'react-router-dom'
 import { useApp } from '../store/AppContext'
 import { updateBoutique } from '../lib/db'
 import { Button, Input, Card, Divider } from '../components/ui'
+import SiteWebModal from '../components/modals/SiteWebModal'
 import {
   Store, Phone, MapPin, Globe, ChevronRight,
-  RefreshCw, BarChart3, LogOut, MessageCircle, CheckCircle2
+  RefreshCw, BarChart3, LogOut, CheckCircle2
 } from 'lucide-react'
 
 export default function Parametres() {
-  const { boutique, updateBoutique: updateCtx, logout, syncStatus, lastSync, manualSync } = useApp()
+  const { boutique, updateBoutique: updateCtx, logout, lastSync, manualSync } = useApp()
   const navigate = useNavigate()
   const [form, setForm] = useState({ nom: boutique?.nom || '', adresse: boutique?.adresse || '' })
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [showSiteWeb, setShowSiteWeb] = useState(false)
 
   const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -33,10 +35,9 @@ export default function Parametres() {
     }
   }
 
-  const whatsappMsg = encodeURIComponent(`Bonjour, je possède une boutique et j'utilise BoutiK. Je souhaite créer un site web pour mon commerce. Boutique : ${boutique?.nom}`)
-
   return (
     <div className="px-4 pt-5 pb-4 space-y-6 animate-fade-in">
+
       <div>
         <h1 className="text-lg font-semibold text-slate-900">Paramètres</h1>
         <p className="text-xs text-slate-500 mt-0.5">Gérez votre boutique</p>
@@ -49,7 +50,13 @@ export default function Parametres() {
             <Input label="Nom de la boutique" value={form.nom} onChange={set('nom')} icon={Store} />
             <Input label="Adresse" placeholder="Secteur, Ville" value={form.adresse} onChange={set('adresse')} icon={MapPin} />
             <Input label="WhatsApp" value={boutique?.whatsapp || ''} disabled icon={Phone} className="opacity-60" />
-            <Button type="submit" loading={saving} className="w-full" variant={saved ? 'brand_outline' : 'primary'} icon={saved ? CheckCircle2 : undefined}>
+            <Button
+              type="submit"
+              loading={saving}
+              className="w-full"
+              variant={saved ? 'brand_outline' : 'primary'}
+              icon={saved ? CheckCircle2 : undefined}
+            >
               {saved ? 'Enregistré' : 'Sauvegarder'}
             </Button>
           </form>
@@ -95,21 +102,24 @@ export default function Parametres() {
             <div className="space-y-3">
               <div>
                 <p className="text-sm font-medium text-slate-900">Aucun site web</p>
-                <p className="text-xs text-slate-500 mt-0.5">Vendez en ligne avec un site professionnel</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Vendez en ligne et touchez plus de clients
+                </p>
               </div>
-              <button
-                onClick={() => window.open(`https://wa.me/22670000000?text=${whatsappMsg}`, '_blank')}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-green-600 text-white rounded-[10px] text-sm font-medium hover:bg-green-700 transition-colors"
+              <Button
+                variant="brand_outline"
+                className="w-full"
+                icon={Globe}
+                onClick={() => setShowSiteWeb(true)}
               >
-                <MessageCircle className="w-4 h-4" />
-                Demander un site web
-              </button>
+                En savoir plus
+              </Button>
             </div>
           )}
         </Card>
       </Section>
 
-      {/* Liens */}
+      {/* Outils */}
       <Section title="Outils">
         <Card padding={false}>
           <NavItem icon={BarChart3} label="Tableau de bord avancé" onClick={() => navigate('/boss')} />
@@ -117,11 +127,19 @@ export default function Parametres() {
       </Section>
 
       {/* Déconnexion */}
-      <Button variant="danger" className="w-full" onClick={async () => { await logout(); navigate('/login') }} icon={LogOut}>
+      <Button
+        variant="danger"
+        className="w-full"
+        onClick={async () => { await logout(); navigate('/login') }}
+        icon={LogOut}
+      >
         Se déconnecter
       </Button>
 
       <p className="text-xs text-slate-400 text-center pb-2">BoutiK v1.0.0 · Offline-first PWA</p>
+
+      {/* Modal site web */}
+      {showSiteWeb && <SiteWebModal onClose={() => setShowSiteWeb(false)} />}
     </div>
   )
 }

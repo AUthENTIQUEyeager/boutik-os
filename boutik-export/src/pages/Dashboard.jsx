@@ -7,10 +7,8 @@ import { getProduitsByBoutique, getCategoriesByBoutique } from '../lib/db'
 import { StatCard, Card, Badge, Button, EmptyState, Spinner, SectionHeader } from '../components/ui'
 import SellModal from '../components/modals/SellModal'
 import AddCategorieModal from '../components/modals/AddCategorieModal'
-import {
-  TrendingUp, ShoppingCart, Package, LayoutGrid,
-  Plus, AlertTriangle, ChevronRight, ArrowUpRight
-} from 'lucide-react'
+import VenteRapideModal from '../components/modals/VenteRapideModal'
+import { TrendingUp, Package, Plus, AlertTriangle, Zap } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' F'
 
@@ -21,6 +19,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedProduit, setSelectedProduit] = useState(null)
   const [showAddCategorie, setShowAddCategorie] = useState(false)
+  const [showVenteRapide, setShowVenteRapide] = useState(false)
   const [filterCat, setFilterCat] = useState('all')
 
   const load = useCallback(async () => {
@@ -37,10 +36,7 @@ export default function Dashboard() {
   useEffect(() => { load() }, [load])
 
   const disponibles = produits.filter(p => !p.vendu)
-  const catsFiltrees = filterCat === 'all'
-    ? categories
-    : categories.filter(c => c.id === filterCat)
-
+  const catsFiltrees = filterCat === 'all' ? categories : categories.filter(c => c.id === filterCat)
   const catsAvecStock = catsFiltrees.map(cat => ({
     ...cat,
     stockRestant: disponibles.filter(p => p.categorieId === cat.id).length,
@@ -49,6 +45,7 @@ export default function Dashboard() {
 
   const handleVenteOk = async () => {
     setSelectedProduit(null)
+    setShowVenteRapide(false)
     await load()
     await refreshStats()
   }
@@ -60,9 +57,7 @@ export default function Dashboard() {
   }
 
   if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <Spinner size="lg" />
-    </div>
+    <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>
   )
 
   const hour = new Date().getHours()
@@ -71,7 +66,7 @@ export default function Dashboard() {
   return (
     <div className="px-4 pt-5 pb-4 space-y-6 animate-fade-in">
 
-      {/* ── Greeting ── */}
+      {/* ── Greeting + actions ── */}
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs text-slate-500 font-medium">
@@ -81,9 +76,19 @@ export default function Dashboard() {
             {greet}, {boutique?.nom?.split(' ')[0] || 'Gérant'}
           </h1>
         </div>
-        <Button size="sm" icon={Plus} onClick={() => setShowAddCategorie(true)}>
-          Catégorie
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Vente rapide */}
+          <button
+            onClick={() => setShowVenteRapide(true)}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-[10px] border border-brand text-brand bg-brand-soft hover:bg-brand hover:text-white transition-all text-xs font-semibold"
+          >
+            <Zap className="w-3.5 h-3.5" />
+            Vente rapide
+          </button>
+          <Button size="sm" icon={Plus} onClick={() => setShowAddCategorie(true)}>
+            Catégorie
+          </Button>
+        </div>
       </div>
 
       {/* ── Stats ── */}
@@ -121,7 +126,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Filtre catégories ── */}
+      {/* ── Filtres catégories ── */}
       {categories.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
           <FilterPill active={filterCat === 'all'} onClick={() => setFilterCat('all')}>Tous</FilterPill>
@@ -133,33 +138,23 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Grille catégories ── */}
+      {/* ── Grille produits ── */}
       <div>
         <SectionHeader
           title="Produits"
-          action={
-            <span className="text-xs text-slate-400">{disponibles.length} en stock</span>
-          }
+          action={<span className="text-xs text-slate-400">{disponibles.length} en stock</span>}
         />
         {catsAvecStock.length === 0 ? (
           <EmptyState
             icon={Package}
             title="Aucun produit"
             description="Ajoutez votre première catégorie pour commencer"
-            action={
-              <Button size="sm" icon={Plus} onClick={() => setShowAddCategorie(true)}>
-                Ajouter une catégorie
-              </Button>
-            }
+            action={<Button size="sm" icon={Plus} onClick={() => setShowAddCategorie(true)}>Ajouter</Button>}
           />
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {catsAvecStock.map(cat => (
-              <CatCard
-                key={cat.id}
-                cat={cat}
-                onPress={() => cat.premierProduit && setSelectedProduit(cat.premierProduit)}
-              />
+              <CatCard key={cat.id} cat={cat} onPress={() => cat.premierProduit && setSelectedProduit(cat.premierProduit)} />
             ))}
           </div>
         )}
@@ -171,7 +166,7 @@ export default function Dashboard() {
           <SectionHeader title="Dernières ventes" />
           <Card padding={false} className="overflow-hidden">
             {stats.dernieresVentes.slice(0, 5).map((v, i) => (
-              <div key={v.id} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
+              <div key={v.id} className={`flex items-center justify-between px-4 py-3.5 ${i > 0 ? 'border-t border-slate-100' : ''}`}>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-900 truncate">{v.nomProduit}</p>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -195,6 +190,9 @@ export default function Dashboard() {
       {showAddCategorie && (
         <AddCategorieModal boutiqueId={boutique.id} onClose={() => setShowAddCategorie(false)} onSuccess={handleCatOk} />
       )}
+      {showVenteRapide && (
+        <VenteRapideModal boutiqueId={boutique.id} onClose={() => setShowVenteRapide(false)} onSuccess={handleVenteOk} />
+      )}
     </div>
   )
 }
@@ -215,14 +213,11 @@ function FilterPill({ children, active, onClick }) {
 function CatCard({ cat, onPress }) {
   const isLow = cat.stockRestant > 0 && cat.stockRestant <= 3
   const isEmpty = cat.stockRestant === 0
-
   return (
     <div
       onClick={!isEmpty ? onPress : undefined}
       className={`bg-white border rounded-[14px] p-3.5 shadow-card transition-all ${
-        isEmpty
-          ? 'border-slate-100 opacity-50'
-          : 'border-slate-200 hover:border-brand/40 hover:shadow-card-hover cursor-pointer active:scale-[0.98]'
+        isEmpty ? 'border-slate-100 opacity-50' : 'border-slate-200 hover:border-brand/40 hover:shadow-card-hover cursor-pointer active:scale-[0.98]'
       }`}
     >
       <div className="space-y-2.5">
