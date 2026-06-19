@@ -1,4 +1,4 @@
-**
+/**
  * BoutiK — Dashboard v2
  */
 import { useState, useEffect, useCallback } from 'react'
@@ -9,9 +9,9 @@ import SellModal from '../components/modals/SellModal'
 import AddCategorieModal from '../components/modals/AddCategorieModal'
 import VenteRapideModal from '../components/modals/VenteRapideModal'
 import { TrendingUp, Package, Plus, AlertTriangle, Zap } from 'lucide-react'
- 
+
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n) + ' F'
- 
+
 export default function Dashboard() {
   const { boutique, stats, refreshStats } = useApp()
   const [produits, setProduits] = useState([])
@@ -21,7 +21,7 @@ export default function Dashboard() {
   const [showAddCategorie, setShowAddCategorie] = useState(false)
   const [showVenteRapide, setShowVenteRapide] = useState(false)
   const [filterCat, setFilterCat] = useState('all')
- 
+
   const load = useCallback(async () => {
     if (!boutique) return
     const [cats, prods] = await Promise.all([
@@ -32,9 +32,9 @@ export default function Dashboard() {
     setProduits(prods)
     setLoading(false)
   }, [boutique])
- 
+
   useEffect(() => { load() }, [load])
- 
+
   const disponibles = produits.filter(p => !p.vendu)
   const catsFiltrees = filterCat === 'all' ? categories : categories.filter(c => c.id === filterCat)
   const catsAvecStock = catsFiltrees.map(cat => ({
@@ -42,30 +42,30 @@ export default function Dashboard() {
     stockRestant: disponibles.filter(p => p.categorieId === cat.id).length,
     premierProduit: disponibles.find(p => p.categorieId === cat.id)
   }))
- 
+
   const handleVenteOk = async () => {
     setSelectedProduit(null)
     setShowVenteRapide(false)
     await load()
     await refreshStats()
   }
- 
+
   const handleCatOk = async () => {
     setShowAddCategorie(false)
     await load()
     await refreshStats()
   }
- 
+
   if (loading) return (
     <div className="flex items-center justify-center h-64"><Spinner size="lg" /></div>
   )
- 
+
   const hour = new Date().getHours()
   const greet = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir'
- 
+
   return (
     <div className="px-4 pt-5 pb-4 space-y-6 animate-fade-in">
- 
+
       {/* ── Greeting + actions ── */}
       <div className="flex items-start justify-between">
         <div>
@@ -90,7 +90,7 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
- 
+
       {/* ── Stats ── */}
       {stats && (
         <div className="grid grid-cols-2 gap-3">
@@ -109,7 +109,7 @@ export default function Dashboard() {
           />
         </div>
       )}
- 
+
       {/* ── Alertes stock faible ── */}
       {stats?.produitsFaibleStock?.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-[14px] p-3 space-y-2">
@@ -125,7 +125,7 @@ export default function Dashboard() {
           ))}
         </div>
       )}
- 
+
       {/* ── Filtres catégories ── */}
       {categories.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide -mx-4 px-4">
@@ -137,7 +137,7 @@ export default function Dashboard() {
           ))}
         </div>
       )}
- 
+
       {/* ── Grille produits ── */}
       <div>
         <SectionHeader
@@ -159,7 +159,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
- 
+
       {/* ── Dernières ventes ── */}
       {stats?.dernieresVentes?.length > 0 && (
         <div>
@@ -182,7 +182,7 @@ export default function Dashboard() {
           </Card>
         </div>
       )}
- 
+
       {/* ── Modals ── */}
       {selectedProduit && (
         <SellModal produit={selectedProduit} boutiqueId={boutique.id} onClose={() => setSelectedProduit(null)} onSuccess={handleVenteOk} />
@@ -196,7 +196,7 @@ export default function Dashboard() {
     </div>
   )
 }
- 
+
 function FilterPill({ children, active, onClick }) {
   return (
     <button
@@ -209,7 +209,7 @@ function FilterPill({ children, active, onClick }) {
     </button>
   )
 }
- 
+
 function CatCard({ cat, onPress }) {
   const isLow = cat.stockRestant > 0 && cat.stockRestant <= 3
   const isEmpty = cat.stockRestant === 0
@@ -243,4 +243,3 @@ function CatCard({ cat, onPress }) {
     </div>
   )
 }
- 
