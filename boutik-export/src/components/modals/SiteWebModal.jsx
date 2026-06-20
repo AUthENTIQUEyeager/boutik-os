@@ -41,11 +41,11 @@ export default function SiteWebModal({ onClose }) {
   )
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={onClose} />
 
       <div
-        className="relative bg-white rounded-t-[22px] w-full max-w-md shadow-modal animate-slide-up overflow-y-auto"
+        className="relative bg-white rounded-t-[22px] lg:rounded-[22px] w-full max-w-md shadow-modal animate-slide-up lg:my-8 overflow-y-auto"
         style={{ maxHeight: '90vh' }}
       >
         {/* Handle */}
@@ -99,7 +99,7 @@ export default function SiteWebModal({ onClose }) {
 
           {/* CTA WhatsApp */}
           <button
-            onClick={() => window.open(`https://wa.me/22670000000?text=${whatsappMsg}`, '_blank')}
+            onClick={() => window.open(`https://wa.me/22665189025?text=${whatsappMsg}`, '_blank')}
             className="w-full flex items-center justify-between px-5 py-4 bg-green-600 text-white rounded-[14px] hover:bg-green-700 transition-colors shadow-sm"
           >
             <div className="flex items-center gap-3">

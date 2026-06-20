@@ -1,10 +1,10 @@
 /**
- * BoutiK - Interface Admin système
+ * BoutiK - Interface Admin système (desktop + mobile)
  */
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Badge, Button, Spinner, Input } from '../components/ui'
-import { ShieldOff, ShieldCheck, Clock, TrendingUp, Users, ShoppingCart } from 'lucide-react'
+import { ShieldOff, ShieldCheck, Clock, TrendingUp, Users, ShoppingCart, LogOut } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n || 0) + ' F'
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
-      <div className="bg-white border-b border-slate-200 px-4 h-14 flex items-center justify-between sticky top-0 z-40">
+      <div className="bg-white border-b border-slate-200 px-4 lg:px-8 h-14 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-brand rounded-[10px] flex items-center justify-center">
             <span className="text-white text-sm font-bold">B</span>
@@ -64,12 +64,16 @@ export default function AdminDashboard() {
           <span className="font-semibold text-slate-900 text-sm">BoutiK Admin</span>
           <Badge variant="ink" className="text-[10px]">Système</Badge>
         </div>
-        <button onClick={() => { localStorage.removeItem('boutik_admin_token'); navigate('/login') }} className="text-xs text-slate-500">
+        <button
+          onClick={() => { localStorage.removeItem('boutik_admin_token'); navigate('/login') }}
+          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+        >
+          <LogOut className="w-3.5 h-3.5" />
           Quitter
         </button>
       </div>
 
-      <div className="px-4 py-5 space-y-5 max-w-md mx-auto">
+      <div className="p-4 lg:p-8 space-y-6 max-w-[1400px] mx-auto">
 
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-[10px] px-4 py-3">
@@ -79,35 +83,11 @@ export default function AdminDashboard() {
 
         {/* Stats globales */}
         {globalStats && (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-white border border-slate-200 rounded-[14px] p-3.5 shadow-card">
-              <div className="flex items-center gap-1.5 mb-2">
-                <Users className="w-3.5 h-3.5 text-slate-400" />
-                <p className="text-xs text-slate-500">Boutiques</p>
-              </div>
-              <p className="text-2xl font-bold text-slate-900">{globalStats.totalBoutiques}</p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-[14px] p-3.5 shadow-card">
-              <div className="flex items-center gap-1.5 mb-2">
-                <ShoppingCart className="w-3.5 h-3.5 text-slate-400" />
-                <p className="text-xs text-slate-500">Ventes totales</p>
-              </div>
-              <p className="text-2xl font-bold text-slate-900">{globalStats.totalVentes}</p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-[14px] p-3.5 shadow-card">
-              <div className="flex items-center gap-1.5 mb-2">
-                <TrendingUp className="w-3.5 h-3.5 text-slate-400" />
-                <p className="text-xs text-slate-500">CA global</p>
-              </div>
-              <p className="text-lg font-bold text-slate-900">{fmt(globalStats.totalCA)}</p>
-            </div>
-            <div className="bg-brand-soft border border-brand-border rounded-[14px] p-3.5">
-              <div className="flex items-center gap-1.5 mb-2">
-                <TrendingUp className="w-3.5 h-3.5 text-brand" />
-                <p className="text-xs text-brand">Bénéfice global</p>
-              </div>
-              <p className="text-lg font-bold text-brand">{fmt(globalStats.totalBenefice)}</p>
-            </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+            <StatBlock icon={Users} label="Boutiques" value={globalStats.totalBoutiques} />
+            <StatBlock icon={ShoppingCart} label="Ventes totales" value={globalStats.totalVentes} />
+            <StatBlock icon={TrendingUp} label="CA global" value={fmt(globalStats.totalCA)} />
+            <StatBlock icon={TrendingUp} label="Bénéfice global" value={fmt(globalStats.totalBenefice)} brand />
           </div>
         )}
 
@@ -119,18 +99,126 @@ export default function AdminDashboard() {
 
           {boutiques.length === 0 ? (
             <div className="text-center py-10 text-sm text-slate-500">Aucune boutique enregistrée</div>
-          ) : boutiques.map(b => (
-            <BoutiqueCard key={b.id} boutique={b} onBloquer={() => handleBloquer(b.id, b.bloquee)} />
-          ))}
+          ) : (
+            <>
+              {/* ── Vue mobile : cards empilées ── */}
+              <div className="lg:hidden space-y-3">
+                {boutiques.map(b => (
+                  <BoutiqueCardMobile key={b.id} boutique={b} onBloquer={() => handleBloquer(b.id, b.bloquee)} />
+                ))}
+              </div>
+
+              {/* ── Vue desktop : tableau ── */}
+              <div className="hidden lg:block bg-white border border-slate-200 rounded-[14px] shadow-card overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50">
+                      <Th>Boutique</Th>
+                      <Th>Inscription</Th>
+                      <Th>Abonnement</Th>
+                      <Th align="right">Ventes</Th>
+                      <Th align="right">CA</Th>
+                      <Th align="right">Bénéfice</Th>
+                      <Th align="center">Statut</Th>
+                      <Th align="right">Action</Th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {boutiques.map(b => (
+                      <BoutiqueRowDesktop key={b.id} boutique={b} onBloquer={() => handleBloquer(b.id, b.bloquee)} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
   )
 }
 
-// ─── CARTE BOUTIQUE ───────────────────────────────────────────────────────────
+function Th({ children, align = 'left' }) {
+  const alignClass = { left: 'text-left', right: 'text-right', center: 'text-center' }[align]
+  return <th className={`px-4 py-3 text-xs font-semibold text-slate-500 uppercase tracking-wide ${alignClass}`}>{children}</th>
+}
 
-function BoutiqueCard({ boutique: b, onBloquer }) {
+function StatBlock({ icon: Icon, label, value, brand }) {
+  return (
+    <div className={`bg-white border rounded-[14px] p-4 shadow-card ${brand ? 'border-brand-border bg-brand-soft' : 'border-slate-200'}`}>
+      <div className="flex items-center gap-1.5 mb-2">
+        <Icon className={`w-3.5 h-3.5 ${brand ? 'text-brand' : 'text-slate-400'}`} />
+        <p className={`text-xs ${brand ? 'text-brand' : 'text-slate-500'}`}>{label}</p>
+      </div>
+      <p className={`text-xl lg:text-2xl font-bold ${brand ? 'text-brand' : 'text-slate-900'}`}>{value}</p>
+    </div>
+  )
+}
+
+// ─── LIGNE DESKTOP (table) ─────────────────────────────────────────────────────
+
+function BoutiqueRowDesktop({ boutique: b, onBloquer }) {
+  const joursRestants = getJoursRestants(b.createdAt)
+  const expireBientot = joursRestants <= 5 && joursRestants > 0
+  const expire = joursRestants <= 0
+
+  return (
+    <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+      <td className="px-4 py-3.5">
+        <p className="text-sm font-semibold text-slate-900">{b.nom}</p>
+        <p className="text-xs text-slate-400">{b.whatsapp}</p>
+      </td>
+      <td className="px-4 py-3.5">
+        <p className="text-xs text-slate-500">{formatDate(b.createdAt)}</p>
+      </td>
+      <td className="px-4 py-3.5 min-w-[160px]">
+        <div className="flex items-center gap-2">
+          <Clock className={`w-3.5 h-3.5 shrink-0 ${expire || b.bloquee ? 'text-red-500' : expireBientot ? 'text-amber-600' : 'text-slate-400'}`} />
+          <div className="flex-1">
+            <p className={`text-xs font-medium ${expire || b.bloquee ? 'text-red-700' : expireBientot ? 'text-amber-700' : 'text-slate-600'}`}>
+              {b.bloquee ? 'Suspendu' : expire ? 'Expiré' : `${joursRestants}j restants`}
+            </p>
+            <div className="w-20 bg-slate-200 rounded-full h-1 mt-1 overflow-hidden">
+              <div
+                className={`h-full rounded-full ${expire || b.bloquee ? 'bg-red-500' : expireBientot ? 'bg-amber-500' : 'bg-brand'}`}
+                style={{ width: `${Math.max(0, Math.min(100, (joursRestants / 30) * 100))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3.5 text-right">
+        <p className="text-sm font-medium text-slate-900">{b._count?.ventes || 0}</p>
+        <p className="text-xs text-slate-400">{b.ventesAujourdhui || 0} aujourd'hui</p>
+      </td>
+      <td className="px-4 py-3.5 text-right">
+        <p className="text-sm font-semibold text-slate-900">{fmt(b.ca)}</p>
+      </td>
+      <td className="px-4 py-3.5 text-right">
+        <p className="text-sm font-semibold text-brand">{fmt(b.benefice)}</p>
+      </td>
+      <td className="px-4 py-3.5 text-center">
+        <Badge variant={b.bloquee ? 'danger' : 'success'}>{b.bloquee ? 'Bloquée' : 'Active'}</Badge>
+      </td>
+      <td className="px-4 py-3.5 text-right">
+        <button
+          onClick={onBloquer}
+          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-xs font-medium transition-colors ${
+            b.bloquee
+              ? 'bg-brand-soft border border-brand-border text-brand hover:bg-brand hover:text-white'
+              : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-600 hover:text-white'
+          }`}
+        >
+          {b.bloquee ? <><ShieldCheck className="w-3.5 h-3.5" /> Débloquer</> : <><ShieldOff className="w-3.5 h-3.5" /> Bloquer</>}
+        </button>
+      </td>
+    </tr>
+  )
+}
+
+// ─── CARTE MOBILE ─────────────────────────────────────────────────────────────
+
+function BoutiqueCardMobile({ boutique: b, onBloquer }) {
   const joursRestants = getJoursRestants(b.createdAt)
   const expireBientot = joursRestants <= 5 && joursRestants > 0
   const expire = joursRestants <= 0
@@ -138,64 +226,43 @@ function BoutiqueCard({ boutique: b, onBloquer }) {
   return (
     <Card>
       <div className="space-y-3">
-        {/* Nom + statut */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-900 truncate">{b.nom}</p>
             <p className="text-xs text-slate-400 mt-0.5">{b.whatsapp}</p>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Inscrit le {formatDate(b.createdAt)}
-            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Inscrit le {formatDate(b.createdAt)}</p>
           </div>
-          <Badge variant={b.bloquee ? 'danger' : 'success'}>
-            {b.bloquee ? 'Bloquée' : 'Active'}
-          </Badge>
+          <Badge variant={b.bloquee ? 'danger' : 'success'}>{b.bloquee ? 'Bloquée' : 'Active'}</Badge>
         </div>
 
-        {/* Compte à rebours 30 jours */}
         <div className={`flex items-center gap-2 rounded-[10px] px-3 py-2 ${
-          b.bloquee ? 'bg-red-50 border border-red-200' :
-          expire ? 'bg-red-50 border border-red-200' :
+          b.bloquee || expire ? 'bg-red-50 border border-red-200' :
           expireBientot ? 'bg-amber-50 border border-amber-200' :
           'bg-slate-50 border border-slate-200'
         }`}>
-          <Clock className={`w-3.5 h-3.5 shrink-0 ${
-            expire || b.bloquee ? 'text-red-500' : expireBientot ? 'text-amber-600' : 'text-slate-400'
-          }`} />
+          <Clock className={`w-3.5 h-3.5 shrink-0 ${expire || b.bloquee ? 'text-red-500' : expireBientot ? 'text-amber-600' : 'text-slate-400'}`} />
           <div className="flex-1">
-            <p className={`text-xs font-medium ${
-              expire || b.bloquee ? 'text-red-700' : expireBientot ? 'text-amber-700' : 'text-slate-600'
-            }`}>
-              {b.bloquee
-                ? 'Compte suspendu'
-                : expire
-                ? 'Abonnement expiré'
-                : `${joursRestants} jour${joursRestants > 1 ? 's' : ''} restant${joursRestants > 1 ? 's' : ''}`
-              }
+            <p className={`text-xs font-medium ${expire || b.bloquee ? 'text-red-700' : expireBientot ? 'text-amber-700' : 'text-slate-600'}`}>
+              {b.bloquee ? 'Compte suspendu' : expire ? 'Abonnement expiré' : `${joursRestants} jour${joursRestants > 1 ? 's' : ''} restant${joursRestants > 1 ? 's' : ''}`}
             </p>
             <div className="w-full bg-slate-200 rounded-full h-1 mt-1.5 overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${
-                  expire || b.bloquee ? 'bg-red-500' : expireBientot ? 'bg-amber-500' : 'bg-brand'
-                }`}
+                className={`h-full rounded-full transition-all ${expire || b.bloquee ? 'bg-red-500' : expireBientot ? 'bg-amber-500' : 'bg-brand'}`}
                 style={{ width: `${Math.max(0, Math.min(100, (joursRestants / 30) * 100))}%` }}
               />
             </div>
           </div>
-          <span className={`text-xs font-bold ${
-            expire || b.bloquee ? 'text-red-600' : expireBientot ? 'text-amber-600' : 'text-brand'
-          }`}>
+          <span className={`text-xs font-bold ${expire || b.bloquee ? 'text-red-600' : expireBientot ? 'text-amber-600' : 'text-brand'}`}>
             {Math.max(0, joursRestants)}/30j
           </span>
         </div>
 
-        {/* Stats boutique */}
         <div className="grid grid-cols-3 gap-2">
           <MiniStat label="Ventes" value={b._count?.ventes || 0} />
           <MiniStat label="Aujourd'hui" value={b.ventesAujourdhui || 0} />
           <MiniStat label="Catégories" value={b._count?.categories || 0} />
         </div>
-        {/* CA et bénéfice */}
+
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-slate-50 rounded-[10px] p-2.5">
             <p className="text-[10px] text-slate-500 mb-0.5">Chiffre d'affaires</p>
@@ -207,7 +274,6 @@ function BoutiqueCard({ boutique: b, onBloquer }) {
           </div>
         </div>
 
-        {/* Bouton bloquer */}
         <button
           onClick={onBloquer}
           className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-[10px] text-sm font-medium transition-colors ${
@@ -216,10 +282,7 @@ function BoutiqueCard({ boutique: b, onBloquer }) {
               : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-600 hover:text-white'
           }`}
         >
-          {b.bloquee
-            ? <><ShieldCheck className="w-4 h-4" /> Débloquer la boutique</>
-            : <><ShieldOff className="w-4 h-4" /> Bloquer la boutique</>
-          }
+          {b.bloquee ? <><ShieldCheck className="w-4 h-4" /> Débloquer la boutique</> : <><ShieldOff className="w-4 h-4" /> Bloquer la boutique</>}
         </button>
       </div>
     </Card>

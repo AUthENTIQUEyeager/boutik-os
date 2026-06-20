@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BoutiK est une application de gestion commerciale simple pour les commerçants. Suivez vos ventes, produits et stocks depuis votre mobile ou ordinateur." />
+  <title>BoutiK — Gérez votre commerce simplement</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --white: #FFFFFF;
+      --bg-alt: #F7F8FA;
+      --bg-card: #FFFFFF;
+      --border: #E5E7EB;
+      --border-light: #F3F4F6;
+      --text-dark: #111827;
+      --text-body: #374151;
+      --text-muted: #6B7280;
+      --text-faint: #9CA3AF;
+      --accent: #16A34A;
+      --accent-light: #F0FDF4;
+      --accent-hover: #15803D;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.04);
+      --radius: 10px;
+      --radius-lg: 14px;
+      --font: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font);
+      color: var(--text-body);
+      background: var(--white);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* ── LOGO MARK ── */
+    .logo-mark {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-mark svg { width: 20px; height: 20px; }
+    .logo-mark-sm {
+      width: 30px; height: 30px;
+      border-radius: 7px;
+    }
+
+    /* ── NAVBAR ── */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      transition: box-shadow 0.2s;
+    }
+    .navbar.scrolled { box-shadow: var(--shadow-sm); }
+    .nav-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 40px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      text-decoration: none;
+      flex-shrink: 0;
+    }
+    .nav-logo-text {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: -0.3px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: var(--text-dark); background: var(--bg-alt); }
+    .nav-cta {
+      background: var(--accent) !important;
+      color: white !important;
+      border-radius: 7px !important;
+      padding: 7px 16px !important;
+      transition: background 0.15s !important;
+    }
+    .nav-cta:hover { background: var(--accent-hover) !important; color: white !important; }
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+    }
+    .nav-hamburger span {
+      display: block;
+      width: 22px; height: 2px;
+      background: var(--text-dark);
+      border-radius: 2px;
+      transition: 0.2s;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      padding: 140px 40px 100px;
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      min-height: 90vh;
+    }
+    .hero-left { max-width: 560px; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--accent-light);
+      border: 1px solid #BBF7D0;
+      border-radius: 100px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+      margin-bottom: 28px;
+    }
+    .hero-badge-dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .hero-title {
+      font-size: clamp(34px, 4vw, 52px);
+      font-weight: 700;
+      color: var(--text-dark);
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-sub {
+      font-size: 17px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 36px;
+      font-weight: 400;
+      max-width: 480px;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 11px 22px;
+      border-radius: 8px;
+      transition: background 0.15s, transform 0.1s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--white);
+      color: var(--text-dark);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      padding: 11px 22px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      transition: background 0.15s, border-color 0.15s;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { background: var(--bg-alt); border-color: #D1D5DB; }
+    .hero-right { display: flex; align-items: center; justify-content: center; }
+    .hero-screenshot {
+      width: 100%;
+      max-width: 420px;
+      aspect-ratio: 10/16;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-screenshot img,
+    .screenshot-placeholder img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: var(--bg-alt);
+    }
+    .hero-screenshot::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 40px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-screenshot::after {
+      content: '';
+      position: absolute;
+      top: 13px; left: 16px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border);
+      box-shadow: 14px 0 0 var(--border), 28px 0 0 var(--border);
+    }
+    .placeholder-icon {
+      width: 48px; height: 48px;
+      border: 2px dashed #D1D5DB;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 20px;
+    }
+    .placeholder-icon svg { opacity: 0.3; }
+    .placeholder-label { font-size: 12px; color: var(--text-faint); font-weight: 500; }
+
+    /* ── SECTION SHARED ── */
+    .section { padding: 96px 40px; }
+    .section-alt { background: var(--bg-alt); }
+    .section-inner { max-width: 1280px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(26px, 3vw, 38px);
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      max-width: 520px;
+    }
+    .section-header { margin-bottom: 56px; }
+
+    /* ── FEATURES ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    }
+    .feature-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); border-color: #D1D5DB; }
+    .feature-icon {
+      width: 44px; height: 44px;
+      background: var(--accent-light);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .feature-icon svg { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .feature-title { font-size: 15px; font-weight: 600; color: var(--text-dark); margin-bottom: 8px; letter-spacing: -0.01em; }
+    .feature-desc { font-size: 14px; color: var(--text-muted); line-height: 1.65; }
+
+    /* ── WHY ── */
+    .why-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .why-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px 26px;
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .why-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .why-icon {
+      width: 38px; height: 38px;
+      border-radius: 9px;
+      background: var(--accent-light);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .why-icon svg { width: 18px; height: 18px; stroke: var(--accent); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .why-text-title { font-size: 14px; font-weight: 600; color: var(--text-dark); margin-bottom: 4px; }
+    .why-text-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── INSTALLATION ── */
+    .install-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+    .install-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 36px 32px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .install-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .install-platform-icon {
+      width: 52px; height: 52px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    .install-title { font-size: 17px; font-weight: 700; color: var(--text-dark); margin-bottom: 20px; letter-spacing: -0.015em; }
+    .install-steps { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .install-steps li { display: flex; gap: 14px; align-items: flex-start; font-size: 14px; color: var(--text-body); line-height: 1.5; }
+    .step-num {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* ── SCREENSHOTS ── */
+    .screenshots-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .screenshot-placeholder {
+      aspect-ratio: 9/16;
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .screenshot-placeholder-icon {
+      width: 40px; height: 40px;
+      border: 2px dashed #D1D5DB;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .screenshot-placeholder-icon svg { opacity: 0.25; width: 20px; height: 20px; }
+    .screenshot-label { font-size: 11px; color: var(--text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; }
+
+    /* ── AVIS ── */
+    .reviews-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .review-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .review-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .review-stars { display: flex; gap: 3px; }
+    .star {
+      width: 16px; height: 16px;
+    }
+    .star-full { color: #F59E0B; }
+    .star-empty { color: #E5E7EB; }
+    .review-text { font-size: 14px; color: var(--text-body); line-height: 1.65; flex: 1; }
+    .review-author { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+    .review-avatar {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    .review-name { font-size: 13px; font-weight: 600; color: var(--text-dark); }
+    .review-role { font-size: 12px; color: var(--text-faint); }
+    .reviews-summary {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .reviews-score {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: -0.04em;
+      line-height: 1;
+    }
+    .reviews-meta { display: flex; flex-direction: column; gap: 4px; }
+    .reviews-stars-row { display: flex; gap: 3px; }
+    .reviews-count { font-size: 13px; color: var(--text-muted); }
+
+    /* ── FAQ ── */
+    .faq-list { max-width: 720px; display: flex; flex-direction: column; gap: 2px; }
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      overflow: hidden;
+      transition: border-color 0.15s;
+    }
+    .faq-item.open { border-color: #BBF7D0; }
+    .faq-question {
+      width: 100%;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      text-align: left;
+      cursor: pointer;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-dark);
+      gap: 16px;
+      transition: background 0.15s;
+    }
+    .faq-question:hover { background: var(--bg-alt); }
+    .faq-chevron {
+      width: 18px; height: 18px;
+      flex-shrink: 0;
+      stroke: var(--text-muted);
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.2s;
+    }
+    .faq-item.open .faq-chevron { transform: rotate(180deg); }
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.25s ease, padding 0.25s;
+      padding: 0 24px;
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    .faq-item.open .faq-answer { max-height: 200px; padding: 0 24px 20px; }
+
+    /* ── CTA ── */
+    .cta-section { background: var(--text-dark); padding: 96px 40px; }
+    .cta-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 28px;
+    }
+    .cta-title { font-size: clamp(28px, 3vw, 42px); font-weight: 700; color: white; letter-spacing: -0.025em; line-height: 1.2; }
+    .cta-sub { font-size: 16px; color: #9CA3AF; max-width: 400px; line-height: 1.6; }
+    .btn-white {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: white;
+      color: var(--text-dark);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 12px 26px;
+      border-radius: 8px;
+      transition: opacity 0.15s, transform 0.1s;
+      letter-spacing: -0.01em;
+    }
+    .btn-white:hover { opacity: 0.92; transform: translateY(-1px); }
+
+    /* ── FOOTER ── */
+    .footer { background: var(--white); border-top: 1px solid var(--border); padding: 56px 40px 32px; }
+    .footer-inner { max-width: 1280px; margin: 0 auto; }
+    .footer-top { display: grid; grid-template-columns: 240px 1fr; gap: 64px; margin-bottom: 48px; }
+    .footer-logo { display: flex; align-items: center; gap: 9px; margin-bottom: 16px; text-decoration: none; }
+    .footer-logo-text { font-size: 15px; font-weight: 700; color: var(--text-dark); }
+    .footer-tagline { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+    .footer-contact { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+    .footer-contact svg { width: 15px; height: 15px; stroke: #22C55E; fill: none; stroke-width: 2; flex-shrink: 0; }
+    .footer-contact a { color: inherit; text-decoration: none; }
+    .footer-contact a:hover { color: var(--text-dark); }
+    .footer-links-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+    .footer-col-title { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; }
+    .footer-col-links { display: flex; flex-direction: column; gap: 10px; }
+    .footer-col-links a { text-decoration: none; font-size: 13px; color: var(--text-muted); transition: color 0.15s; }
+    .footer-col-links a:hover { color: var(--text-dark); }
+    .footer-bottom { border-top: 1px solid var(--border-light); padding-top: 24px; display: flex; align-items: center; justify-content: space-between; }
+    .footer-copy { font-size: 12px; color: var(--text-faint); }
+
+    /* ── SCROLL ANIMATIONS ── */
+    .fade-up { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+    .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .features-grid { grid-template-columns: repeat(2, 1fr); }
+      .screenshots-grid { grid-template-columns: repeat(2, 1fr); }
+      .reviews-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; gap: 48px; padding-top: 110px; min-height: auto; }
+      .hero-right { display: none; }
+      .why-grid { grid-template-columns: repeat(2, 1fr); }
+      .install-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; gap: 36px; }
+      .footer-links-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .section { padding: 64px 24px; }
+      .nav-inner { padding: 0 20px; }
+      .hero { padding: 100px 24px 64px; }
+      .nav-links { display: none; }
+      .nav-links.open { display: flex; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: white; border-bottom: 1px solid var(--border); padding: 12px 20px; gap: 2px; }
+      .nav-links.open a { padding: 10px 12px; width: 100%; }
+      .nav-hamburger { display: flex; }
+      .features-grid { grid-template-columns: 1fr; }
+      .why-grid { grid-template-columns: 1fr; }
+      .screenshots-grid { grid-template-columns: repeat(2, 1fr); }
+      .reviews-grid { grid-template-columns: 1fr; }
+      .footer-links-grid { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; gap: 8px; text-align: center; }
+      .cta-section { padding: 64px 24px; }
+      .footer { padding: 48px 24px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══ LOGO SVG (robotic B) — réutilisé partout via inline ══ -->
+<!-- Le "B" robotique est un SVG avec des angles nets, des découpes géométriques et une forme monospace -->
+
+<!-- ══════════════ NAVBAR ══════════════ -->
+<nav class="navbar" id="navbar">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" fill="none">
+          <!-- B robotique : corps vertical + deux demi-cercles anguleux -->
+          <rect x="4" y="3" width="3" height="14" fill="white"/>
+          <rect x="7" y="3" width="5" height="2.5" fill="white"/>
+          <rect x="12" y="3" width="2" height="2.5" fill="white"/>
+          <rect x="14" y="5.5" width="1.5" height="3" fill="white"/>
+          <rect x="7" y="8.5" width="7" height="2" fill="white"/>
+          <rect x="14" y="10.5" width="1.5" height="3" fill="white"/>
+          <rect x="7" y="13.5" width="5" height="2.5" fill="white"/>
+          <rect x="12" y="13.5" width="2" height="2.5" fill="white"/>
+        </svg>
+      </div>
+      <span class="nav-logo-text">BoutiK</span>
+    </a>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#">Accueil</a></li>
+      <li><a href="#fonctionnalites">Fonctionnalités</a></li>
+      <li><a href="#installation">Installation</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="https://boutik-os.vercel.app" class="nav-cta" target="_blank" rel="noreferrer">Accéder à BoutiK</a></li>
+    </ul>
+    <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
+<!-- ══════════════ HERO ══════════════ -->
+<section class="hero" id="accueil">
+  <div class="hero-left fade-up">
+    <div class="hero-badge">
+      <div class="hero-badge-dot"></div>
+      Application disponible · Aucune inscription requise
+    </div>
+    <h1 class="hero-title">Gérez votre commerce simplement avec <span>BoutiK</span></h1>
+    <p class="hero-sub">BoutiK est une application de gestion commerciale qui vous aide à suivre vos ventes, vos produits et votre stock depuis votre téléphone ou votre ordinateur.</p>
+    <div class="hero-actions">
+      <a href="https://boutik-os.vercel.app" class="btn-primary" target="_blank" rel="noreferrer">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Accéder à BoutiK
+      </a>
+      <a href="#installation" class="btn-secondary">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 12l4 4 4-4"/><path d="M4 18h16"/></svg>
+        Voir l'installation
+      </a>
+    </div>
+  </div>
+  <div class="hero-right fade-up" style="transition-delay:0.1s">
+    <div class="hero-screenshot">
+      <img src="dashboard.jpeg" alt="Capture d'écran du dashboard BoutiK" />
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FONCTIONNALITÉS ══════════════ -->
+<section class="section section-alt" id="fonctionnalites">
+  <div class="section-inner">
+    <div class="section-header fade-up">
+      <p class="section-label">Fonctionnalités</p>
+      <h2 class="section-title">Tout ce dont vous avez besoin</h2>
+      <p class="section-desc">Des outils simples et efficaces pour gérer votre activité au quotidien, sans complexité inutile.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card fade-up">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12l2 2 4-4"/></svg>
+        </div>
+        <h3 class="feature-title">Gestion des ventes</h3>
+        <p class="feature-desc">Enregistrez et suivez facilement toutes vos ventes en temps réel, avec un historique clair.</p>
+      </div>
+      <div class="feature-card fade-up" style="transition-delay:0.08s">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        </div>
+        <h3 class="feature-title">Gestion des produits</h3>
+        <p class="feature-desc">Ajoutez, modifiez et organisez vos produits rapidement avec photos, prix et catégories.</p>
+      </div>
+      <div class="feature-card fade-up" style="transition-delay:0.16s">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <h3 class="feature-title">Gestion du stock</h3>
+        <p class="feature-desc">Gardez le contrôle sur vos quantités disponibles et recevez des alertes de stock faible.</p>
+      </div>
+      <div class="feature-card fade-up" style="transition-delay:0.24s">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <h3 class="feature-title">Statistiques</h3>
+        <p class="feature-desc">Visualisez l'évolution de votre activité grâce à des graphiques clairs et des rapports simples.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ POURQUOI BOUTIK ══════════════ -->
+<section class="section" id="pourquoi">
+  <div class="section-inner">
+    <div class="section-header fade-up">
+      <p class="section-label">Pourquoi BoutiK</p>
+      <h2 class="section-title">Conçu pour votre réalité</h2>
+      <p class="section-desc">BoutiK s'adapte à vos conditions de travail, même sans connexion stable.</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card fade-up">
+        <div class="why-icon"><svg viewBox="0 0 24 24"><path d="M1 6s2-2 5-2 5 2 8 2 5-2 5-2v14s-2 2-5 2-5-2-8-2-5 2-5 2V6z"/></svg></div>
+        <div>
+          <p class="why-text-title">Fonctionne hors connexion</p>
+          <p class="why-text-desc">Continuez à enregistrer vos ventes même sans Internet. Les données se synchronisent dès le retour du réseau.</p>
+        </div>
+      </div>
+      <div class="why-card fade-up" style="transition-delay:0.07s">
+        <div class="why-icon"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <div>
+          <p class="why-text-title">Installation rapide</p>
+          <p class="why-text-desc">Installez BoutiK en moins d'une minute directement depuis votre navigateur, sans démarche complexe.</p>
+        </div>
+      </div>
+      <div class="why-card fade-up" style="transition-delay:0.14s">
+        <div class="why-icon"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg></div>
+        <div>
+          <p class="why-text-title">Compatible mobile et ordinateur</p>
+          <p class="why-text-desc">Une seule application, parfaitement adaptée à tous vos appareils — téléphone, tablette ou PC.</p>
+        </div>
+      </div>
+      <div class="why-card fade-up" style="transition-delay:0.21s">
+        <div class="why-icon"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+        <div>
+          <p class="why-text-title">Interface simple</p>
+          <p class="why-text-desc">Une prise en main immédiate, sans formation nécessaire. Concentrez-vous sur votre commerce, pas sur l'outil.</p>
+        </div>
+      </div>
+      <div class="why-card fade-up" style="transition-delay:0.28s">
+        <div class="why-icon"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <div>
+          <p class="why-text-title">Aucun store requis</p>
+          <p class="why-text-desc">Pas de Play Store, pas d'App Store. BoutiK s'installe directement depuis le navigateur, sans validation externe.</p>
+        </div>
+      </div>
+      <div class="why-card fade-up" style="transition-delay:0.35s">
+        <div class="why-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <div>
+          <p class="why-text-title">Données sécurisées</p>
+          <p class="why-text-desc">Vos données restent accessibles localement et peuvent être sauvegardées en toute sécurité.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ INSTALLATION ══════════════ -->
+<section class="section section-alt" id="installation">
+  <div class="section-inner">
+    <div class="section-header fade-up">
+      <p class="section-label">Installation</p>
+      <h2 class="section-title">Prêt en moins d'une minute</h2>
+      <p class="section-desc">BoutiK s'installe directement depuis votre navigateur. Choisissez votre appareil ci-dessous.</p>
+    </div>
+    <div class="install-grid">
+      <div class="install-card fade-up">
+        <div class="install-platform-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M6 18L4 20M18 18l2 2" stroke="#16A34A" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M3.5 9a8.5 8.5 0 0 1 17 0v5a8.5 8.5 0 0 1-17 0V9z" stroke="#16A34A" stroke-width="1.8"/>
+            <circle cx="9" cy="11" r="1" fill="#16A34A"/>
+            <circle cx="15" cy="11" r="1" fill="#16A34A"/>
+          </svg>
+        </div>
+        <h3 class="install-title">Android</h3>
+        <ol class="install-steps">
+          <li><span class="step-num">1</span><span>Ouvrez BoutiK dans votre navigateur Chrome.</span></li>
+          <li><span class="step-num">2</span><span>Appuyez sur les <strong>3 points</strong> en haut à droite.</span></li>
+          <li><span class="step-num">3</span><span>Choisissez <strong>"Ajouter à l'écran d'accueil"</strong>.</span></li>
+          <li><span class="step-num">4</span><span>Confirmez en appuyant sur <strong>Ajouter</strong>.</span></li>
+        </ol>
+      </div>
+      <div class="install-card fade-up" style="transition-delay:0.1s">
+        <div class="install-platform-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <rect x="5" y="2" width="14" height="20" rx="2.5" stroke="#6B7280" stroke-width="1.8"/>
+            <path d="M9 4.5h6" stroke="#6B7280" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="12" cy="18" r="0.8" fill="#6B7280"/>
+          </svg>
+        </div>
+        <h3 class="install-title">iPhone / iPad</h3>
+        <ol class="install-steps">
+          <li><span class="step-num">1</span><span>Ouvrez BoutiK dans <strong>Safari</strong>.</span></li>
+          <li><span class="step-num">2</span><span>Appuyez sur l'icône <strong>Partager</strong> (carré avec flèche).</span></li>
+          <li><span class="step-num">3</span><span>Choisissez <strong>"Ajouter à l'écran d'accueil"</strong>.</span></li>
+          <li><span class="step-num">4</span><span>Confirmez en appuyant sur <strong>Ajouter</strong>.</span></li>
+        </ol>
+      </div>
+      <div class="install-card fade-up" style="transition-delay:0.2s">
+        <div class="install-platform-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <rect x="2" y="3" width="20" height="14" rx="2" stroke="#16A34A" stroke-width="1.8"/>
+            <path d="M8 21h8M12 17v4" stroke="#16A34A" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3 class="install-title">Ordinateur</h3>
+        <ol class="install-steps">
+          <li><span class="step-num">1</span><span>Ouvrez BoutiK dans <strong>Chrome</strong> ou <strong>Edge</strong>.</span></li>
+          <li><span class="step-num">2</span><span>Cliquez sur l'icône <strong>Installer</strong> dans la barre d'adresse, ou les 3 points.</span></li>
+          <li><span class="step-num">3</span><span>Cliquez sur <strong>"Installer"</strong> dans le menu.</span></li>
+          <li><span class="step-num">4</span><span>BoutiK s'ouvre comme une application native.</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CAPTURES ══════════════ -->
+<section class="section" id="captures">
+  <div class="section-inner">
+    <div class="section-header fade-up">
+      <p class="section-label">Aperçu</p>
+      <h2 class="section-title">Une interface pensée pour vous</h2>
+      <p class="section-desc">BoutiK est conçu pour être clair et rapide à prendre en main, quel que soit votre niveau technique.</p>
+    </div>
+    <div class="screenshots-grid fade-up">
+      <div class="screenshot-placeholder">
+        <img src="acceuil.jpeg" alt="Capture d'écran Accueil de BoutiK" />
+      </div>
+      <div class="screenshot-placeholder">
+        <img src="produit.jpeg" alt="Capture d'écran Produits de BoutiK" />
+      </div>
+      <div class="screenshot-placeholder">
+        <img src="parametre.jpeg" alt="Capture d'écran Stock de BoutiK" />
+      </div>
+      <div class="screenshot-placeholder">
+        <img src="vente.jpeg" alt="Capture d'écran Ventes de BoutiK" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ AVIS ══════════════ -->
+<section class="section section-alt" id="avis">
+  <div class="section-inner">
+    <div class="section-header fade-up">
+      <p class="section-label">Avis clients</p>
+      <h2 class="section-title">Ce qu'en disent les commerçants</h2>
+      <p class="section-desc">Des commerçants qui utilisent BoutiK au quotidien partagent leur expérience.</p>
+      <div class="reviews-summary" style="margin-top:28px">
+        <span class="reviews-score">4,8</span>
+        <div class="reviews-meta">
+          <div class="reviews-stars-row">
+            <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          </div>
+          <span class="reviews-count">Basé sur 4 avis de commerçants</span>
+        </div>
+      </div>
+    </div>
+    <div class="reviews-grid">
+
+      <!-- Avis 1 — 5 étoiles -->
+      <div class="review-card fade-up">
+        <div class="review-stars">
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </div>
+        <p class="review-text">"Avant BoutiK, je notais tout à la main dans un cahier. Maintenant je vois d'un coup d'œil ce qui se vend le mieux et ce qu'il faut commander. Franchement, ça m'a changé la vie."</p>
+        <div class="review-author">
+          <div class="review-avatar" style="background:#16A34A">A</div>
+          <div>
+            <p class="review-name">Aminata Sawadogo</p>
+            <p class="review-role">Épicerie, Bobo-Dioulasso</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avis 2 — 5 étoiles -->
+      <div class="review-card fade-up" style="transition-delay:0.08s">
+        <div class="review-stars">
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </div>
+        <p class="review-text">"Je gère une petite boutique de vêtements et j'avais souvent des erreurs de stock. Avec BoutiK, tout est à jour en temps réel. L'installation a pris deux minutes, même mon employé a pu l'utiliser tout de suite."</p>
+        <div class="review-author">
+          <div class="review-avatar" style="background:#7C3AED">K</div>
+          <div>
+            <p class="review-name">Kofi Traoré</p>
+            <p class="review-role">Boutique textile, Ouagadougou</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avis 3 — 5 étoiles -->
+      <div class="review-card fade-up" style="transition-delay:0.16s">
+        <div class="review-stars">
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </div>
+        <p class="review-text">"Ce qui m'a convaincu c'est que ça marche même quand le réseau est coupé. Dans mon quartier on perd souvent la connexion, mais mes ventes continuent d'être enregistrées sans problème."</p>
+        <div class="review-author">
+          <div class="review-avatar" style="background:#DC2626">M</div>
+          <div>
+            <p class="review-name">Mariam Diallo</p>
+            <p class="review-role">Commerce général, Koudougou</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Avis 4 — 4 étoiles -->
+      <div class="review-card fade-up" style="transition-delay:0.24s">
+        <div class="review-stars">
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-full" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          <svg class="star star-empty" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        </div>
+        <p class="review-text">"L'application est vraiment bien faite et simple à utiliser. Ce que j'attends encore c'est une option pour imprimer les reçus directement. Mais pour le reste, c'est solide — je la recommande à tous mes collègues."</p>
+        <div class="review-author">
+          <div class="review-avatar" style="background:#D97706">I</div>
+          <div>
+            <p class="review-name">Ibrahim Coulibaly</p>
+            <p class="review-role">Pharmacie communautaire, Banfora</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ FAQ ══════════════ -->
+<section class="section" id="faq">
+  <div class="section-inner">
+    <div class="section-header fade-up">
+      <p class="section-label">FAQ</p>
+      <h2 class="section-title">Questions fréquentes</h2>
+    </div>
+    <div class="faq-list fade-up">
+      <div class="faq-item open">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          BoutiK fonctionne-t-il sans Internet ?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-answer">Oui. BoutiK est une Progressive Web App (PWA) conçue pour fonctionner même sans connexion Internet. Les fonctionnalités principales — enregistrement des ventes, consultation du stock, gestion des produits — restent disponibles hors ligne. Les données se synchronisent automatiquement dès que la connexion est rétablie.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Dois-je passer par le Play Store ou l'App Store ?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-answer">Non. BoutiK s'installe directement depuis votre navigateur, sans passer par le Play Store ou l'App Store. Il vous suffit d'ouvrir BoutiK dans Chrome, Safari ou Edge, puis de l'ajouter à votre écran d'accueil en quelques secondes.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Puis-je l'utiliser sur ordinateur ?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-answer">Absolument. BoutiK fonctionne sur tous les appareils — téléphone Android ou iPhone, tablette, et ordinateur sous Windows, Mac ou Linux. L'interface s'adapte automatiquement à la taille de votre écran pour une expérience optimale partout.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question" onclick="toggleFaq(this)">
+          Mes données sont-elles conservées ?
+          <svg class="faq-chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq-answer">Oui. Vos données sont enregistrées localement sur votre appareil, ce qui garantit leur accessibilité même sans connexion. Des mécanismes de sauvegarde et de synchronisation sont prévus pour assurer la sécurité et la continuité de vos informations.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════ CTA ══════════════ -->
+<section class="cta-section">
+  <div class="cta-inner fade-up">
+    <h2 class="cta-title">Prêt à utiliser BoutiK ?</h2>
+    <p class="cta-sub">Commencez dès maintenant, sans inscription, sans installation depuis un store.</p>
+    <a href="https://boutik-os.vercel.app" class="btn-white" target="_blank" rel="noreferrer">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Accéder à BoutiK
+    </a>
+  </div>
+</section>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="footer-logo">
+          <div class="logo-mark logo-mark-sm">
+            <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" fill="none">
+              <rect x="4" y="3" width="3" height="14" fill="white"/>
+              <rect x="7" y="3" width="5" height="2.5" fill="white"/>
+              <rect x="12" y="3" width="2" height="2.5" fill="white"/>
+              <rect x="14" y="5.5" width="1.5" height="3" fill="white"/>
+              <rect x="7" y="8.5" width="7" height="2" fill="white"/>
+              <rect x="14" y="10.5" width="1.5" height="3" fill="white"/>
+              <rect x="7" y="13.5" width="5" height="2.5" fill="white"/>
+              <rect x="12" y="13.5" width="2" height="2.5" fill="white"/>
+            </svg>
+          </div>
+          <span class="footer-logo-text">BoutiK</span>
+        </a>
+        <p class="footer-tagline">Application de gestion commerciale simple et efficace pour les commerçants.</p>
+        <div class="footer-contact">
+          <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.65 3.42 2 2 0 0 1 3.62 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.58a16 16 0 0 0 6 6l.93-.93a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16z"/></svg>
+          WhatsApp&nbsp;<a href="https://wa.me/22665189025">+226 65 18 90 25</a>
+        </div>
+      </div>
+      <div class="footer-links-grid">
+        <div>
+          <p class="footer-col-title">Application</p>
+          <div class="footer-col-links">
+            <a href="https://boutik-os.vercel.app" target="_blank" rel="noreferrer">Accéder à BoutiK</a>
+            <a href="#fonctionnalites">Fonctionnalités</a>
+            <a href="#captures">Aperçu</a>
+          </div>
+        </div>
+        <div>
+          <p class="footer-col-title">Guide</p>
+          <div class="footer-col-links">
+            <a href="#installation">Installation Android</a>
+            <a href="#installation">Installation iPhone</a>
+            <a href="#installation">Installation PC</a>
+          </div>
+        </div>
+        <div>
+          <p class="footer-col-title">Support</p>
+          <div class="footer-col-links">
+            <a href="#faq">FAQ</a>
+            <a href="https://wa.me/22665189025">Nous contacter</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2025 BoutiK. Tous droits réservés.</p>
+      <p class="footer-copy">Fait avec soin au Burkina Faso 🇧🇫</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  window.addEventListener('scroll', () => {
+    document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 8);
+  });
+  document.getElementById('hamburger').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+  document.querySelectorAll('#navLinks a').forEach(a => {
+    a.addEventListener('click', () => document.getElementById('navLinks').classList.remove('open'));
+  });
+  function toggleFaq(btn) {
+    const item = btn.closest('.faq-item');
+    const isOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!isOpen) item.classList.add('open');
+  }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

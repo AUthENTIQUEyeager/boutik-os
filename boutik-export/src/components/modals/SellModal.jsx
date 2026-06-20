@@ -27,10 +27,10 @@ export default function SellModal({ produit, boutiqueId, onClose, onSuccess }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-t-[22px] w-full max-w-md shadow-modal animate-slide-up">
+      <div className="relative bg-white rounded-t-[22px] lg:rounded-[22px] w-full max-w-md shadow-modal animate-slide-up lg:my-8">
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-2">
           <div className="w-9 h-1 bg-slate-200 rounded-full" />

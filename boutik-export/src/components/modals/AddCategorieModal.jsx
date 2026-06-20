@@ -54,10 +54,10 @@ export default function AddCategorieModal({ boutiqueId, onClose, onSuccess }) {
   const benefice = form.prixVente && form.prixAchat ? parseInt(form.prixVente) - parseInt(form.prixAchat) : null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center">
       <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative bg-white rounded-t-[22px] w-full max-w-md shadow-modal animate-slide-up overflow-y-auto" style={{ maxHeight: '92vh' }}>
+      <div className="relative bg-white rounded-t-[22px] lg:rounded-[22px] w-full max-w-md shadow-modal animate-slide-up lg:my-8 overflow-y-auto" style={{ maxHeight: '92vh' }}>
         <div className="flex justify-center pt-3 pb-2 sticky top-0 bg-white z-10">
           <div className="w-9 h-1 bg-slate-200 rounded-full" />
         </div>
