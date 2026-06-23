@@ -1,80 +1,8 @@
 /**
- * BoutiK — Module IndexedDB additionnel
- * Dettes clients + Dépenses
- * N'importe RIEN de db.js, gère sa propre upgrade via DB_VERSION bump
+ * BoutiK — Fonctions DB pour Dettes et Dépenses
+ * Utilise getDB() de db.js (même instance, pas de conflit de version)
  */
-import { openDB } from 'idb'
-
-const DB_NAME = 'boutik-db'
-const DB_VERSION = 2  // Version 1 = db.js, Version 2 = ce fichier
-
-let dbInstance = null
-
-export async function getExtDB() {
-  if (dbInstance) return dbInstance
-
-  dbInstance = await openDB(DB_NAME, DB_VERSION, {
-    upgrade(db, oldVersion) {
-      // ── Stores existants (version 1) ──
-      if (oldVersion < 1) {
-        if (!db.objectStoreNames.contains('boutiques')) {
-          const s = db.createObjectStore('boutiques', { keyPath: 'id' })
-          s.createIndex('whatsapp', 'whatsapp', { unique: true })
-        }
-        if (!db.objectStoreNames.contains('categories')) {
-          const s = db.createObjectStore('categories', { keyPath: 'id' })
-          s.createIndex('boutiqueId', 'boutiqueId')
-          s.createIndex('synced', 'synced')
-        }
-        if (!db.objectStoreNames.contains('produits')) {
-          const s = db.createObjectStore('produits', { keyPath: 'id' })
-          s.createIndex('categorieId', 'categorieId')
-          s.createIndex('boutiqueId', 'boutiqueId')
-          s.createIndex('vendu', 'vendu')
-          s.createIndex('synced', 'synced')
-        }
-        if (!db.objectStoreNames.contains('ventes')) {
-          const s = db.createObjectStore('ventes', { keyPath: 'id' })
-          s.createIndex('boutiqueId', 'boutiqueId')
-          s.createIndex('date', 'date')
-          s.createIndex('synced', 'synced')
-        }
-        if (!db.objectStoreNames.contains('sync_queue')) {
-          db.createObjectStore('sync_queue', { keyPath: 'id', autoIncrement: true })
-        }
-        if (!db.objectStoreNames.contains('session')) {
-          db.createObjectStore('session', { keyPath: 'key' })
-        }
-      }
-
-      // ── Nouveaux stores (version 2) ──
-      if (oldVersion < 2) {
-        // Dettes clients
-        if (!db.objectStoreNames.contains('dettes')) {
-          const s = db.createObjectStore('dettes', { keyPath: 'id' })
-          s.createIndex('boutiqueId', 'boutiqueId')
-          s.createIndex('statut', 'statut')
-        }
-        // Paiements partiels sur dettes
-        if (!db.objectStoreNames.contains('paiements_dette')) {
-          const s = db.createObjectStore('paiements_dette', { keyPath: 'id' })
-          s.createIndex('detteId', 'detteId')
-        }
-        // Dépenses
-        if (!db.objectStoreNames.contains('depenses')) {
-          const s = db.createObjectStore('depenses', { keyPath: 'id' })
-          s.createIndex('boutiqueId', 'boutiqueId')
-          s.createIndex('date', 'date')
-          s.createIndex('categorie', 'categorie')
-        }
-      }
-    }
-  })
-
-  return dbInstance
-}
-
-// ─── HELPERS ─────────────────────────────────────────────────────────────────
+import { getDB } from './db'
 
 function genId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
@@ -85,7 +13,7 @@ function genId(prefix) {
 // ═══════════════════════════════════════════════════════════════════
 
 export async function creerDette(boutiqueId, data) {
-  const db = await getExtDB()
+  const db = await getDB()
   const dette = {
     id: genId('DET'),
     boutiqueId,
@@ -94,7 +22,7 @@ export async function creerDette(boutiqueId, data) {
     montantTotal: data.montantTotal,
     montantPaye: 0,
     solde: data.montantTotal,
-    statut: 'en_cours', // en_cours | paye
+    statut: 'en_cours',
     description: data.description || '',
     venteId: data.venteId || null,
     createdAt: new Date().toISOString(),
@@ -105,21 +33,20 @@ export async function creerDette(boutiqueId, data) {
 }
 
 export async function getDettes(boutiqueId) {
-  const db = await getExtDB()
+  const db = await getDB()
   return db.getAllFromIndex('dettes', 'boutiqueId', boutiqueId)
 }
 
 export async function getDette(id) {
-  const db = await getExtDB()
+  const db = await getDB()
   return db.get('dettes', id)
 }
 
 export async function ajouterPaiement(detteId, montant) {
-  const db = await getExtDB()
+  const db = await getDB()
   const dette = await db.get('dettes', detteId)
   if (!dette) throw new Error('Dette introuvable')
 
-  // Enregistrer le paiement
   const paiement = {
     id: genId('PAY'),
     detteId,
@@ -128,7 +55,6 @@ export async function ajouterPaiement(detteId, montant) {
   }
   await db.put('paiements_dette', paiement)
 
-  // Mettre à jour la dette
   const nouveauPaye = dette.montantPaye + montant
   const nouveauSolde = Math.max(0, dette.montantTotal - nouveauPaye)
   const detteMAJ = {
@@ -143,25 +69,15 @@ export async function ajouterPaiement(detteId, montant) {
 }
 
 export async function getPaiementsDette(detteId) {
-  const db = await getExtDB()
+  const db = await getDB()
   return db.getAllFromIndex('paiements_dette', 'detteId', detteId)
 }
 
 export async function supprimerDette(id) {
-  const db = await getExtDB()
+  const db = await getDB()
   const paiements = await db.getAllFromIndex('paiements_dette', 'detteId', id)
   for (const p of paiements) await db.delete('paiements_dette', p.id)
   await db.delete('dettes', id)
-}
-
-export async function getStatsDetttes(boutiqueId) {
-  const dettes = await getDettes(boutiqueId)
-  return {
-    total: dettes.length,
-    enCours: dettes.filter(d => d.statut === 'en_cours').length,
-    totalDu: dettes.filter(d => d.statut === 'en_cours').reduce((s, d) => s + d.solde, 0),
-    totalRecu: dettes.reduce((s, d) => s + d.montantPaye, 0),
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -169,16 +85,16 @@ export async function getStatsDetttes(boutiqueId) {
 // ═══════════════════════════════════════════════════════════════════
 
 export const CATEGORIES_DEPENSES = [
-  { value: 'stock',      label: 'Réapprovisionnement stock' },
-  { value: 'transport',  label: 'Transport' },
-  { value: 'loyer',      label: 'Loyer' },
-  { value: 'electricite',label: 'Électricité' },
-  { value: 'salaire',    label: 'Salaire' },
-  { value: 'autre',      label: 'Autre' },
+  { value: 'stock',       label: 'Réapprovisionnement stock' },
+  { value: 'transport',   label: 'Transport' },
+  { value: 'loyer',       label: 'Loyer' },
+  { value: 'electricite', label: 'Électricité' },
+  { value: 'salaire',     label: 'Salaire' },
+  { value: 'autre',       label: 'Autre' },
 ]
 
 export async function creerDepense(boutiqueId, data) {
-  const db = await getExtDB()
+  const db = await getDB()
   const depense = {
     id: genId('DEP'),
     boutiqueId,
@@ -192,30 +108,11 @@ export async function creerDepense(boutiqueId, data) {
 }
 
 export async function getDepenses(boutiqueId) {
-  const db = await getExtDB()
+  const db = await getDB()
   return db.getAllFromIndex('depenses', 'boutiqueId', boutiqueId)
 }
 
 export async function supprimerDepense(id) {
-  const db = await getExtDB()
+  const db = await getDB()
   await db.delete('depenses', id)
-}
-
-export async function getStatsDepenses(boutiqueId) {
-  const depenses = await getDepenses(boutiqueId)
-  const now = new Date()
-  const today = depenses.filter(d => new Date(d.date).toDateString() === now.toDateString())
-  const thisMonth = depenses.filter(d => {
-    const dd = new Date(d.date)
-    return dd.getMonth() === now.getMonth() && dd.getFullYear() === now.getFullYear()
-  })
-  return {
-    totalJour: today.reduce((s, d) => s + d.montant, 0),
-    totalMois: thisMonth.reduce((s, d) => s + d.montant, 0),
-    totalGlobal: depenses.reduce((s, d) => s + d.montant, 0),
-    parCategorie: CATEGORIES_DEPENSES.map(cat => ({
-      ...cat,
-      total: depenses.filter(d => d.categorie === cat.value).reduce((s, d) => s + d.montant, 0)
-    }))
-  }
 }
