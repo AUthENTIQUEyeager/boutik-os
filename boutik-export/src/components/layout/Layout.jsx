@@ -8,13 +8,15 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { useApp } from '../../store/AppContext'
 import {
   LayoutDashboard, ShoppingCart, Package,
-  Settings, RefreshCw, CheckCircle2, BarChart3
+  Settings, RefreshCw, CheckCircle2, BarChart3, CreditCard, Wallet
 } from 'lucide-react'
 
 const NAV = [
   { path: '/',           label: 'Accueil',      Icon: LayoutDashboard },
   { path: '/ventes',     label: 'Ventes',       Icon: ShoppingCart },
   { path: '/stock',      label: 'Stock',        Icon: Package },
+  { path: '/dettes',     label: 'Dettes',       Icon: CreditCard },
+  { path: '/depenses',   label: 'Dépenses',     Icon: Wallet },
   { path: '/boss',       label: 'Statistiques', Icon: BarChart3 },
   { path: '/parametres', label: 'Paramètres',   Icon: Settings },
 ]
@@ -154,6 +156,8 @@ function PageTitle() {
     '/':           'Tableau de bord',
     '/ventes':     'Ventes',
     '/stock':      'Stock',
+    '/dettes':     'Dettes clients',
+    '/depenses':   'Dépenses',
     '/boss':       'Statistiques',
     '/parametres': 'Paramètres',
   }

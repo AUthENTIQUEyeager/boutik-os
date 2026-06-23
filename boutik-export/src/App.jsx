@@ -11,6 +11,9 @@ import Stock from './pages/Stock'
 import Parametres from './pages/Parametres'
 import BossDashboard from './pages/BossDashboard'
 import AdminDashboard, { AdminLogin } from './pages/Admin'
+import Dettes from './pages/Dettes'
+import Depenses from './pages/Depenses'
+import PWAInstallPrompt from './components/PWAInstallPrompt'
 import BoutiqueBloquee from './components/BoutiqueBloquee'
 import { Spinner } from './components/ui'
 
@@ -44,6 +47,8 @@ function AdminRoute({ children }) {
 
 export default function App() {
   return (
+    <>
+    <PWAInstallPrompt />
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -68,7 +73,16 @@ export default function App() {
         <ProtectedRoute><Layout><BossDashboard /></Layout></ProtectedRoute>
       } />
 
+      <Route path="/dettes" element={
+        <ProtectedRoute><Layout><Dettes /></Layout></ProtectedRoute>
+      } />
+      <Route path="/depenses" element={
+        <ProtectedRoute><Layout><Depenses /></Layout></ProtectedRoute>
+      } />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }
+
