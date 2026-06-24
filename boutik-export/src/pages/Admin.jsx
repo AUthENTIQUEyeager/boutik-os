@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Badge, Button, Spinner, Input } from '../components/ui'
-import { ShieldOff, ShieldCheck, Clock, TrendingUp, Users, ShoppingCart, LogOut } from 'lucide-react'
+import { ShieldOff, ShieldCheck, Clock, TrendingUp, Users, ShoppingCart, LogOut, MessageCircle } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n || 0) + ' F'
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
@@ -229,7 +229,20 @@ function BoutiqueCardMobile({ boutique: b, onBloquer }) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-slate-900 truncate">{b.nom}</p>
-            <p className="text-xs text-slate-400 mt-0.5">{b.whatsapp}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-slate-400">{b.whatsapp}</p>
+              {b.whatsapp && (
+                <a
+                  href={`https://wa.me/${b.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Bonjour ${b.nom}, nous avons une nouveauté sur BoutiK pour vous !`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-green-50 border border-green-200 text-green-600 hover:bg-green-600 hover:text-white transition-colors"
+                >
+                  <MessageCircle className="w-3 h-3" />
+                  <span className="text-[10px] font-medium">WhatsApp</span>
+                </a>
+              )}
+            </div>
             <p className="text-xs text-slate-400 mt-0.5">Inscrit le {formatDate(b.createdAt)}</p>
           </div>
           <Badge variant={b.bloquee ? 'danger' : 'success'}>{b.bloquee ? 'Bloquée' : 'Active'}</Badge>
