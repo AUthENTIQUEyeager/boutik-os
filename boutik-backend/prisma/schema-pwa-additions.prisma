@@ -1,0 +1,20 @@
+// ─── AJOUT AU SCHEMA PRISMA EXISTANT ─────────────────────────────────────────
+// Coller ces deux modèles à la fin de prisma/schema.prisma
+
+model PwaInstall {
+  id          Int      @id @default(autoincrement())
+  platform    String   @default("unknown")
+  installedAt DateTime @default(now())
+  userAgent   String   @default("")
+
+  @@map("pwa_installs")
+}
+
+model PwaVisit {
+  id          Int      @id @default(autoincrement())
+  platform    String   @default("unknown")
+  isInstalled Boolean  @default(false)
+  visitedAt   DateTime @default(now())
+
+  @@map("pwa_visits")
+}

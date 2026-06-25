@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Badge, Button, Spinner, Input } from '../components/ui'
-import { ShieldOff, ShieldCheck, Clock, TrendingUp, Users, ShoppingCart, LogOut, MessageCircle } from 'lucide-react'
+import { ShieldOff, ShieldCheck, Clock, TrendingUp, Users, ShoppingCart, LogOut, MessageCircle, Smartphone, BarChart2, Globe } from 'lucide-react'
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR').format(n || 0) + ' F'
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
@@ -15,6 +15,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate()
   const [boutiques, setBoutiques] = useState([])
   const [globalStats, setGlobalStats] = useState(null)
+  const [pwaStats, setPwaStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -27,13 +28,15 @@ export default function AdminDashboard() {
   async function loadData(token) {
     try {
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-      const [r1, r2] = await Promise.all([
+      const [r1, r2, r3] = await Promise.all([
         fetch(`${API_URL}/api/admin/boutiques`, { headers }),
-        fetch(`${API_URL}/api/admin/stats`, { headers })
+        fetch(`${API_URL}/api/admin/stats`, { headers }),
+        fetch(`${API_URL}/api/admin/pwa/stats`, { headers })
       ])
       if (r1.status === 401) { localStorage.removeItem('boutik_admin_token'); navigate('/admin/login', { replace: true }); return }
       setBoutiques(await r1.json())
       setGlobalStats(await r2.json())
+      if (r3.ok) setPwaStats(await r3.json())
     } catch (err) {
       setError('Erreur de connexion au serveur')
     } finally {
@@ -324,6 +327,18 @@ function formatDate(iso) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+// ─── PWA STAT BLOCK ───────────────────────────────────────────────────────────
+
+function PWAStatBlock({ label, value, sub, icon: Icon, accent }) {
+  return (
+    <div className={`rounded-[14px] p-3.5 border shadow-card ${accent ? 'bg-brand-soft border-brand-border' : 'bg-white border-slate-200'}`}>
+      <p className={`text-xs mb-1.5 ${accent ? 'text-brand' : 'text-slate-500'}`}>{label}</p>
+      <p className={`text-xl font-bold ${accent ? 'text-brand' : 'text-slate-900'}`}>{value}</p>
+      {sub && <p className="text-[10px] text-slate-400 mt-0.5">{sub}</p>}
+    </div>
+  )
+}
+
 // ─── LOGIN ADMIN ──────────────────────────────────────────────────────────────
 
 export function AdminLogin() {
@@ -372,3 +387,4 @@ export function AdminLogin() {
     </div>
   )
 }
+
