@@ -3,6 +3,7 @@
  */
 import { Router } from 'express'
 import { authMiddleware, adminMiddleware } from '../middleware/auth.js'
+import { recordInstall, recordVisit, getPwaStats } from '../controllers/pwa.controller.js'
 
 // Controllers
 import { login, register, me, changePassword } from '../controllers/auth.controller.js'
@@ -51,5 +52,9 @@ router.get('/admin/boutiques', authMiddleware, adminMiddleware, getAllBoutiques)
 router.put('/admin/boutiques/:id/bloquer', authMiddleware, adminMiddleware, bloquerBoutique)
 router.put('/admin/boutiques/:id/debloquer', authMiddleware, adminMiddleware, debloquerBoutique)
 router.get('/admin/stats', authMiddleware, adminMiddleware, getGlobalStats)
+
+router.post('/pwa/install', recordInstall)
+router.post('/pwa/visit', recordVisit)
+router.get('/admin/pwa/stats', authMiddleware, adminMiddleware, getPwaStats)
 
 export default router
