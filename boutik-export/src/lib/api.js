@@ -1,14 +1,10 @@
 /**
  * BoutiK - Service API
- * Centralise tous les appels vers le backend Render
  */
-
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
-// Helper fetch avec token JWT boutique
 async function apiFetch(path, options = {}) {
   const token = localStorage.getItem('boutik_token')
-
   const res = await fetch(`${API_URL}/api${path}`, {
     ...options,
     headers: {
@@ -17,17 +13,10 @@ async function apiFetch(path, options = {}) {
       ...options.headers
     }
   })
-
   const data = await res.json()
-
-  if (!res.ok) {
-    throw new Error(data.error || 'Erreur serveur')
-  }
-
+  if (!res.ok) throw new Error(data.error || 'Erreur serveur')
   return data
 }
-
-// ─── AUTH BOUTIQUE ───────────────────────────────────────────────────────────
 
 export async function apiLogin(whatsapp, password) {
   const data = await apiFetch('/auth/login', {
@@ -47,8 +36,6 @@ export async function apiRegister(nom, whatsapp, password) {
   return data
 }
 
-// Essaie de se connecter sur le backend ; si la boutique n'existe pas
-// encore en ligne (créée hors-ligne), la crée automatiquement.
 export async function apiLoginOrRegister(nom, whatsapp, password) {
   try {
     return await apiLogin(whatsapp, password)
@@ -70,25 +57,13 @@ export function hasToken() {
   return !!localStorage.getItem('boutik_token')
 }
 
-// ─── BOUTIQUE ────────────────────────────────────────────────────────────────
-
-export async function apiGetStats() {
-  return apiFetch('/boutique/stats')
+export function hasApiUrl() {
+  return !!API_URL
 }
-
-export async function apiUpdateBoutique(data) {
-  return apiFetch('/boutique', { method: 'PUT', body: JSON.stringify(data) })
-}
-
-// ─── SYNC ────────────────────────────────────────────────────────────────────
 
 export async function apiSync(queue) {
   return apiFetch('/sync', {
     method: 'POST',
     body: JSON.stringify({ queue })
   })
-}
-
-export function hasApiUrl() {
-  return !!API_URL
 }

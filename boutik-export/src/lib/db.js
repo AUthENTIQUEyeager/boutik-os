@@ -5,7 +5,7 @@
 import { openDB } from 'idb'
 
 const DB_NAME = 'boutik-db'
-const DB_VERSION = 2
+const DB_VERSION = 1
 
 let dbInstance = null
 
@@ -53,23 +53,6 @@ export async function getDB() {
       if (!db.objectStoreNames.contains('session')) {
         db.createObjectStore('session', { keyPath: 'key' })
       }
-
-      // ── Version 2 : Dettes + Dépenses ──
-      if (!db.objectStoreNames.contains('dettes')) {
-        const s = db.createObjectStore('dettes', { keyPath: 'id' })
-        s.createIndex('boutiqueId', 'boutiqueId')
-        s.createIndex('statut', 'statut')
-      }
-      if (!db.objectStoreNames.contains('paiements_dette')) {
-        const s = db.createObjectStore('paiements_dette', { keyPath: 'id' })
-        s.createIndex('detteId', 'detteId')
-      }
-      if (!db.objectStoreNames.contains('depenses')) {
-        const s = db.createObjectStore('depenses', { keyPath: 'id' })
-        s.createIndex('boutiqueId', 'boutiqueId')
-        s.createIndex('date', 'date')
-        s.createIndex('categorie', 'categorie')
-      }
     }
   })
 
@@ -98,7 +81,7 @@ export async function clearSession() {
 export async function createBoutique(data) {
   const db = await getDB()
   const boutique = {
-    id: generateId('BTK'),
+    id: data.id || generateId('BTK'), // utiliser l'ID fourni (backend) ou en générer un
     ...data,
     createdAt: new Date().toISOString(),
     synced: false
