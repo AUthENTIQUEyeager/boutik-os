@@ -13,6 +13,9 @@ import { getProduits, getProduit } from '../controllers/produits.controller.js'
 import { getVentes, createVente, getBossStats } from '../controllers/ventes.controller.js'
 import { sync, getSyncStatus } from '../controllers/sync.controller.js'
 import { adminLogin, getAllBoutiques, bloquerBoutique, debloquerBoutique, getGlobalStats } from '../controllers/admin.controller.js'
+import { pullData } from '../controllers/pull.controller.js'
+
+router.get('/sync/pull', authMiddleware, pullData)
 
 const router = Router()
 
