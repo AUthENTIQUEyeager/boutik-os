@@ -15,7 +15,7 @@ import { sync, getSyncStatus } from '../controllers/sync.controller.js'
 import { adminLogin, getAllBoutiques, bloquerBoutique, debloquerBoutique, getGlobalStats } from '../controllers/admin.controller.js'
 import { pullData } from '../controllers/pull.controller.js'
 
-router.get('/sync/pull', authMiddleware, pullData)
+
 
 const router = Router()
 
@@ -55,6 +55,8 @@ router.get('/admin/boutiques', authMiddleware, adminMiddleware, getAllBoutiques)
 router.put('/admin/boutiques/:id/bloquer', authMiddleware, adminMiddleware, bloquerBoutique)
 router.put('/admin/boutiques/:id/debloquer', authMiddleware, adminMiddleware, debloquerBoutique)
 router.get('/admin/stats', authMiddleware, adminMiddleware, getGlobalStats)
+
+router.get('/sync/pull', authMiddleware, pullData)
 
 router.post('/pwa/install', recordInstall)
 router.post('/pwa/visit', recordVisit)
