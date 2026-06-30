@@ -1,8 +1,7 @@
 /**
  * BoutiK — Authentification
- * Deux modes :
- * - Nouvelle boutique : register backend + créer local
- * - Boutique existante : login backend + pull complet des données
+ * login()         → TOUJOURS register (nouvelle boutique)
+ * loginExistant() → login strict + pull données
  */
 import {
   findBoutiqueByWhatsapp, createBoutique,
@@ -13,66 +12,72 @@ import { pullFromBackend } from './pull'
 
 const API_URL = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '')
 
-// ─── LOGIN NOUVELLE BOUTIQUE ──────────────────────────────────────────────────
-// Essaie login (si compte existe) ou register (si nouveau)
+// ─── NOUVELLE BOUTIQUE — toujours register ────────────────────────────────────
 
 export async function login(nomBoutique, whatsapp, motDePasse) {
   if (hasApiUrl() && navigator.onLine) {
     try {
-      return await loginViaBackend(nomBoutique, whatsapp, motDePasse, false)
+      // Appeler directement register — pas de login, c'est une nouvelle boutique
+      const regRes = await fetch(`${API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom: nomBoutique, whatsapp, password: motDePasse })
+      })
+      const regData = await regRes.json()
+
+      if (regRes.ok) {
+        if (regData.token) localStorage.setItem('boutik_token', regData.token)
+        const boutique = await syncBoutiqueLocale(regData.boutique, motDePasse)
+        await saveSession({ boutiqueId: boutique.id, role: 'gerant', whatsapp, password: motDePasse })
+        return { success: true, boutique, isNew: true }
+      }
+
+      // Numéro déjà utilisé
+      if (regRes.status === 409) {
+        return { success: false, error: 'Ce numéro WhatsApp est déjà associé à une boutique. Utilisez "J\'ai déjà une boutique".' }
+      }
+
+      return { success: false, error: regData.error || 'Erreur lors de la création' }
+
     } catch (err) {
-      console.warn('Backend injoignable, fallback local:', err.message)
+      console.warn('Backend injoignable, création locale:', err.message)
     }
   }
-  return loginViaLocal(nomBoutique, whatsapp, motDePasse)
+
+  // Fallback offline — créer localement
+  return createLocale(nomBoutique, whatsapp, motDePasse)
 }
 
-// ─── LOGIN BOUTIQUE EXISTANTE ─────────────────────────────────────────────────
-// Login strict + pull complet des données
+// ─── BOUTIQUE EXISTANTE — login strict + pull ─────────────────────────────────
 
 export async function loginExistant(whatsapp, motDePasse) {
   if (!hasApiUrl() || !navigator.onLine) {
-    // Offline : essayer IndexedDB
-    return loginViaLocal('', whatsapp, motDePasse)
+    // Offline : chercher dans IndexedDB
+    return loginLocale(whatsapp, motDePasse)
   }
 
   try {
-    const result = await loginViaBackend('', whatsapp, motDePasse, true)
-    return result
-  } catch (err) {
-    return { success: false, error: 'Impossible de contacter le serveur. Vérifiez votre connexion.' }
-  }
-}
+    const loginRes = await fetch(`${API_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ whatsapp, password: motDePasse })
+    })
+    const loginData = await loginRes.json()
 
-// ─── BACKEND AUTH ─────────────────────────────────────────────────────────────
+    if (!loginRes.ok) {
+      if (loginRes.status === 404 || (loginData.error || '').includes('Aucune')) {
+        return { success: false, error: 'Aucune boutique trouvée avec ce numéro WhatsApp' }
+      }
+      return { success: false, error: loginData.error || 'Mot de passe incorrect' }
+    }
 
-async function loginViaBackend(nomBoutique, whatsapp, motDePasse, existantOnly) {
-
-  // 1. Tenter login
-  const loginRes = await fetch(`${API_URL}/api/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ whatsapp, password: motDePasse })
-  })
-  const loginData = await loginRes.json()
-
-  if (loginRes.ok) {
-    // Connexion réussie → sauvegarder token
     if (loginData.token) localStorage.setItem('boutik_token', loginData.token)
 
-    // Pull complet des données depuis le backend
+    // Pull complet des données
     const pullResult = await pullFromBackend(loginData.token)
-    console.log('Pull result:', pullResult)
 
-    // Récupérer ou créer la boutique locale
     const boutique = await syncBoutiqueLocale(loginData.boutique, motDePasse)
-
-    await saveSession({
-      boutiqueId: boutique.id,
-      role: 'gerant',
-      whatsapp,
-      password: motDePasse
-    })
+    await saveSession({ boutiqueId: boutique.id, role: 'gerant', whatsapp, password: motDePasse })
 
     return {
       success: true,
@@ -80,73 +85,37 @@ async function loginViaBackend(nomBoutique, whatsapp, motDePasse, existantOnly) 
       isNew: false,
       pulled: pullResult.counts
     }
+  } catch (err) {
+    console.error('loginExistant error:', err)
+    return { success: false, error: 'Impossible de contacter le serveur. Vérifiez votre connexion.' }
   }
-
-  // Si mode "existant seulement" et boutique introuvable
-  if (existantOnly) {
-    if (loginRes.status === 401) {
-      const msg = loginData.error || ''
-      if (msg.includes('Aucune') || msg.includes('introuvable')) {
-        return { success: false, error: 'Aucune boutique trouvée avec ce numéro WhatsApp' }
-      }
-      return { success: false, error: 'Mot de passe incorrect' }
-    }
-    return { success: false, error: loginData.error || 'Erreur de connexion' }
-  }
-
-  // Mode normal : si boutique introuvable → register
-  if (loginRes.status === 401) {
-    const msg = loginData.error || ''
-    if (msg.includes('Aucune') || msg.includes('introuvable')) {
-      return await registerViaBackend(nomBoutique, whatsapp, motDePasse)
-    }
-    return { success: false, error: 'Mot de passe incorrect' }
-  }
-
-  return { success: false, error: loginData.error || 'Erreur serveur' }
-}
-
-async function registerViaBackend(nomBoutique, whatsapp, motDePasse) {
-  const regRes = await fetch(`${API_URL}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nom: nomBoutique, whatsapp, password: motDePasse })
-  })
-  const regData = await regRes.json()
-
-  if (!regRes.ok) return { success: false, error: regData.error || 'Erreur lors de la création' }
-
-  if (regData.token) localStorage.setItem('boutik_token', regData.token)
-  const boutique = await syncBoutiqueLocale(regData.boutique, motDePasse)
-  await saveSession({ boutiqueId: boutique.id, role: 'gerant', whatsapp, password: motDePasse })
-  return { success: true, boutique, isNew: true }
-}
-
-// ─── LOCAL AUTH ───────────────────────────────────────────────────────────────
-
-async function loginViaLocal(nomBoutique, whatsapp, motDePasse) {
-  const boutique = await findBoutiqueByWhatsapp(whatsapp)
-
-  if (!boutique) {
-    if (!nomBoutique) return { success: false, error: 'Boutique introuvable hors ligne' }
-    const nouvelle = await createBoutique({
-      nom: nomBoutique, whatsapp,
-      motDePasse: hashPassword(motDePasse),
-      adresse: '', logo: null, siteWeb: null
-    })
-    await saveSession({ boutiqueId: nouvelle.id, role: 'gerant', whatsapp, password: motDePasse })
-    return { success: true, boutique: nouvelle, isNew: true }
-  }
-
-  if (boutique.motDePasse !== hashPassword(motDePasse)) {
-    return { success: false, error: 'Mot de passe incorrect' }
-  }
-
-  await saveSession({ boutiqueId: boutique.id, role: 'gerant', whatsapp, password: motDePasse })
-  return { success: true, boutique, isNew: false }
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+async function createLocale(nomBoutique, whatsapp, motDePasse) {
+  const existing = await findBoutiqueByWhatsapp(whatsapp)
+  if (existing) {
+    return { success: false, error: 'Ce numéro est déjà utilisé. Utilisez "J\'ai déjà une boutique".' }
+  }
+  const nouvelle = await createBoutique({
+    nom: nomBoutique, whatsapp,
+    motDePasse: hashPassword(motDePasse),
+    adresse: '', logo: null, siteWeb: null
+  })
+  await saveSession({ boutiqueId: nouvelle.id, role: 'gerant', whatsapp, password: motDePasse })
+  return { success: true, boutique: nouvelle, isNew: true }
+}
+
+async function loginLocale(whatsapp, motDePasse) {
+  const boutique = await findBoutiqueByWhatsapp(whatsapp)
+  if (!boutique) return { success: false, error: 'Boutique introuvable hors ligne' }
+  if (boutique.motDePasse !== hashPassword(motDePasse)) {
+    return { success: false, error: 'Mot de passe incorrect' }
+  }
+  await saveSession({ boutiqueId: boutique.id, role: 'gerant', whatsapp, password: motDePasse })
+  return { success: true, boutique, isNew: false }
+}
 
 async function syncBoutiqueLocale(remoteBoutique, motDePasse) {
   if (!remoteBoutique) throw new Error('Données boutique manquantes')
